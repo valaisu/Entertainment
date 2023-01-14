@@ -1,0 +1,10 @@
+The improved version of this bot would communicate
+with google using packets. However, after further inspection,
+this does seem like a rather difficult task. A single click
+in google translate sends 27 packets, and I can't find where
+the important information is stored
+
+UPDATE:
+
+It seems like the link is important. Most if not all the
+important data is stored in the link!
