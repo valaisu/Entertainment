@@ -163,32 +163,42 @@ def poly(surf, color, coords):
     pygame.draw.polygon(surf, color, coords)
     pygame.draw.polygon(surf, (0,0,0), coords, 2)
 
+moveInstructions = [0,0]
 
 polygon = False
 while not crashed:
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             crashed = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 polygon = True
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_DOWN:
-                viewPoint[1] -= 100
-                updatePoints(pointList, viewPoint)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                viewPoint[1] += 100
-                updatePoints(pointList, viewPoint)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                viewPoint[0] += 100
-                updatePoints(pointList, viewPoint)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT:
-                viewPoint[0] -= 100
-                updatePoints(pointList, viewPoint)
 
+            if event.key == pygame.K_DOWN:
+                moveInstructions[1] -= 100
+            if event.key == pygame.K_UP:
+                moveInstructions[1] += 100
+            if event.key == pygame.K_LEFT:
+                moveInstructions[0] += 100
+            if event.key == pygame.K_RIGHT:
+                moveInstructions[0] -= 100
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_DOWN:
+                moveInstructions[1] += 100
+            if event.key == pygame.K_UP:
+                moveInstructions[1] -= 100
+            if event.key == pygame.K_LEFT:
+                moveInstructions[0] -= 100
+                updatePoints(pointList, viewPoint)
+            if event.key == pygame.K_RIGHT:
+                moveInstructions[0] += 100
+
+
+    viewPoint[0] += moveInstructions[0]
+    viewPoint[1] += moveInstructions[1]
+    updatePoints(pointList, viewPoint)
     gameDisplay.fill(white)
     rect(gameDisplay, (250, 50, 50))
     if polygon:
