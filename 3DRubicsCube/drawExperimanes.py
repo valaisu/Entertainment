@@ -1,18 +1,16 @@
-#import sys
-from PIL import Image, ImageDraw
+import pygame
 import math
-import copy
 
-# Program in progress
-
-# Aim is to create a rubics cube, that user can rotate realistically.
+# Aim is to create a Rubik's cube, that user can rotate realistically.
 # Currently draws a single 3D cube from certain viewpoint on a 2D plane.
 
 #TODO: -Design and create a proper datastructure for describing the cube CHECK
-#      -Change to a 2D display library, that allows user interaction
+#      -Change to a 2D display library, that allows user interaction CHECK
 #      -Make the viewpoint movable, then allow the user control it
 #      -Add more cubes, make them rotatable around x y and z axis
 #      -Add keybinds for each rubics cube move
+
+# CREATING THE CUBE
 
 # Define some functions
 
@@ -100,10 +98,6 @@ def createCube(center, size, viewpoint):
 # later faces are added here farthest from nearest to the viewpoint
 drawQueue = []
 
-# prep image
-im = Image.open("BlankImage.png")
-draw = ImageDraw.Draw(im)
-
 viewPoint = [2048+1024, 2048+1024, 4096+1024]
 pointList, faceList = [],[]
 
@@ -138,16 +132,63 @@ for i in range(len(pointList)):
 zoom = 0.1
 shift = (128*3, 128*3)
 
-for i in range(len(drawQueue)):
-    temp = faceList[drawQueue[i]].points
-    points = [temp[k].coords2D for k in range(len(temp))]
 
-    draw.polygon(
-        ((points[0][0] * zoom + shift[0], points[0][1] * zoom + shift[1]),
-         (points[1][0] * zoom + shift[0], points[1][1] * zoom + shift[1]),
-         (points[2][0] * zoom + shift[0], points[2][1] * zoom + shift[1]),
-         (points[3][0] * zoom + shift[0], points[3][1] * zoom + shift[1])),
-        fill=(faceList[drawQueue[i]].color),
-        outline=(0, 0, 0))
 
-im.show()
+
+
+
+# CREATING THE DISPLAY
+
+pygame.init()
+
+display_width = 800
+display_height = 800
+
+gameDisplay = pygame.display.set_mode((display_width, display_height))
+pygame.display.set_caption('Tests')
+
+black = (0, 0, 0)
+white = (255, 255, 255)
+
+clock = pygame.time.Clock()
+crashed = False
+carImg = pygame.image.load('img.jpg')
+
+def rect(surf, color):
+    pygame.draw.rect(surf, color, pygame.Rect(30, 30, 60, 60))
+    pygame.draw.rect(surf, (0,0,0), pygame.Rect(30, 30, 60, 60), 2)
+
+def poly(surf, color, coords):
+    pygame.draw.polygon(surf, color, coords)
+    pygame.draw.polygon(surf, (0,0,0), coords, 2)
+
+
+polygon = False
+while not crashed:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            crashed = True
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                polygon = True
+
+    gameDisplay.fill(white)
+    rect(gameDisplay, (250, 50, 50))
+    if polygon:
+        poly(gameDisplay, (100, 100, 1), ((100, 140), (120, 120), (130, 160), (120, 200), (110, 180)))
+
+
+    for i in range(len(drawQueue)):
+        temp = faceList[drawQueue[i]].points
+        points = [temp[k].coords2D for k in range(len(temp))]
+        poly(gameDisplay, faceList[drawQueue[i]].color,
+            ((points[0][0] * zoom + shift[0], points[0][1] * zoom + shift[1]),
+             (points[1][0] * zoom + shift[0], points[1][1] * zoom + shift[1]),
+             (points[2][0] * zoom + shift[0], points[2][1] * zoom + shift[1]),
+             (points[3][0] * zoom + shift[0], points[3][1] * zoom + shift[1])))
+
+    pygame.display.update()
+    clock.tick(60)
+
+pygame.quit()
+quit()
