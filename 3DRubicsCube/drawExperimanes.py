@@ -90,7 +90,7 @@ def createCube(center, size, viewpoint):
     for i in range(2):
         faceList.append(face(pointList[(i * 4):(i * 4 + 4)], RGB_Palette[i]))
     for i in range(4):
-        faceList.append(face([pointList[0 + i], pointList[(1 + i) % 4], pointList[(5 + i) % 8], pointList[4 + i]], RGB_Palette[i+2]))
+        faceList.append(face([pointList[0 + i], pointList[(1 + i) % 4], pointList[4 + (1 + i) % 4], pointList[4 + i]], RGB_Palette[i+2]))
     updatePoints(pointList, viewpoint)
     return pointList, faceList
 
@@ -111,28 +111,29 @@ for i in range(3):
                 pointList += tempP
                 faceList += tempL
 
+def calculateDrawOrder(pointlist, facelist):
 
-# sort the points by distance
-tempOrder = pointList.copy()
-tempOrder.sort(key=lambda x: x.distance, reverse=True)
-distanceOrder = [pointList.index(tempOrder[i]) for i in range(len(tempOrder))]
-
-
-for i in range(len(pointList)):
-    pointList[distanceOrder[i]].drawable = True
-    newDrawables = []
-    for j in range(len(faceList)):
-        if faceList[j].drawable() and not faceList[j].hasBeenDrawn:
-            faceList[j].hasBeenDrawn = True
-            newDrawables.append(j)
-    # calculates how far the points of each face are on average from the viewpoint, decides drawing order based on that
-    newDrawables.sort(key=lambda x: sum([faceList[x].points[k].distance for k in range(4)]), reverse=True)
-    drawQueue += newDrawables
+    # sort the points by distance
+    tempOrder = pointlist.copy()
+    tempOrder.sort(key=lambda x: x.distance, reverse=True)
+    distanceOrder = [pointlist.index(tempOrder[i]) for i in range(len(tempOrder))]
+    queue = [] #defining length beforehand would make this faster
+    for i in range(len(pointlist)):
+        pointlist[distanceOrder[i]].drawable = True
+        newDrawables = []
+        for j in range(len(facelist)):
+            if facelist[j].drawable() and not facelist[j].hasBeenDrawn:
+                facelist[j].hasBeenDrawn = True
+                newDrawables.append(j)
+        # calculates how far the points of each face are on average from the viewpoint, decides drawing order based on that
+        newDrawables.sort(key=lambda x: sum([facelist[x].points[k].distance for k in range(4)]), reverse=True)
+        queue += newDrawables
+    return queue
 
 zoom = 0.1
 shift = (128*3, 128*3)
 
-
+drawQueue = calculateDrawOrder(pointList, faceList)
 
 
 
@@ -171,13 +172,31 @@ while not crashed:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 polygon = True
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DOWN:
+                viewPoint[1] -= 100
+                updatePoints(pointList, viewPoint)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                viewPoint[1] += 100
+                updatePoints(pointList, viewPoint)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                viewPoint[0] += 100
+                updatePoints(pointList, viewPoint)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RIGHT:
+                viewPoint[0] -= 100
+                updatePoints(pointList, viewPoint)
 
     gameDisplay.fill(white)
     rect(gameDisplay, (250, 50, 50))
     if polygon:
         poly(gameDisplay, (100, 100, 1), ((100, 140), (120, 120), (130, 160), (120, 200), (110, 180)))
-
-
+    for i in range(len(faceList)):
+        faceList[i].hasBeenDrawn = False
+    updatePoints(pointList, viewPoint)
+    drawQueue = calculateDrawOrder(pointList, faceList)
     for i in range(len(drawQueue)):
         temp = faceList[drawQueue[i]].points
         points = [temp[k].coords2D for k in range(len(temp))]
