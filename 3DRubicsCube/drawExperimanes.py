@@ -6,7 +6,8 @@ import math
 
 #TODO: -Design and create a proper datastructure for describing the cube CHECK
 #      -Change to a 2D display library, that allows user interaction CHECK
-#      -Make the viewpoint movable, then allow the user control it
+#      -Make the viewpoint movable, then allow the user control it CHECK
+#           -Make the plane plane the cube is drawn on orthogonal to the viewpoint
 #      -Add more cubes, make them rotatable around x y and z axis
 #      -Add keybinds for each rubics cube move
 
@@ -39,6 +40,9 @@ def coords3Dto2D_XYPlane(viewpoint, point):
         newX = point[0] + (point[0] - viewpoint[0]) * multiplier
         newY = point[1] + (point[1] - viewpoint[1]) * multiplier
         return [newX, newY]
+
+
+
 
 
 # list = PointList
@@ -135,7 +139,25 @@ shift = (128*3, 128*3)
 
 drawQueue = calculateDrawOrder(pointList, faceList)
 
+# MOVING THE VIEWPOINT
 
+def betaInc(amount, b):
+    return (b + amount) % 360
+
+def betaDec(amount, b):
+    return (b - amount) % 360
+
+def alphaInc(amount, a):
+    return (a + amount) % 360
+
+def alphaDec(amount, a):
+    return (a - amount) % 360
+
+def carthesian(r, a, b):
+    x = r * math.sin(a / 180 * math.pi)*math.cos(b / 180 * math.pi)
+    y = r * math.sin(a / 180 * math.pi)*math.sin(b / 180 * math.pi)
+    z = r * math.cos(a / 180 * math.pi)
+    return [x, y, z]
 
 
 # CREATING THE DISPLAY
@@ -155,52 +177,62 @@ clock = pygame.time.Clock()
 crashed = False
 carImg = pygame.image.load('img.jpg')
 
-def rect(surf, color):
-    pygame.draw.rect(surf, color, pygame.Rect(30, 30, 60, 60))
-    pygame.draw.rect(surf, (0,0,0), pygame.Rect(30, 30, 60, 60), 2)
 
 def poly(surf, color, coords):
     pygame.draw.polygon(surf, color, coords)
     pygame.draw.polygon(surf, (0,0,0), coords, 2)
 
-moveInstructions = [0,0]
+moveInstructions = [0,0,0]
 
+a = 45
+b = 60
+alpha = 0
+beta = 0
 polygon = False
 while not crashed:
 
+    dist = 6000
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             crashed = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                polygon = True
-
             if event.key == pygame.K_DOWN:
-                moveInstructions[1] -= 100
+                alpha -= 0.6
             if event.key == pygame.K_UP:
-                moveInstructions[1] += 100
+                alpha += 0.6
             if event.key == pygame.K_LEFT:
-                moveInstructions[0] += 100
+                beta += 6
             if event.key == pygame.K_RIGHT:
-                moveInstructions[0] -= 100
+                beta -= 6
+
+            if event.key == pygame.K_q:
+                moveInstructions[2] += 100
+            if event.key == pygame.K_a:
+                moveInstructions[2] -= 100
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
-                moveInstructions[1] += 100
+                alpha += 0.6
             if event.key == pygame.K_UP:
-                moveInstructions[1] -= 100
+                alpha -= 0.6
             if event.key == pygame.K_LEFT:
-                moveInstructions[0] -= 100
-                updatePoints(pointList, viewPoint)
+                beta -= 6
             if event.key == pygame.K_RIGHT:
-                moveInstructions[0] += 100
+                beta += 6
 
+            if event.key == pygame.K_q:
+                moveInstructions[2] -= 100
+            if event.key == pygame.K_a:
+                moveInstructions[2] += 100
 
-    viewPoint[0] += moveInstructions[0]
+    '''viewPoint[0] += moveInstructions[0]
     viewPoint[1] += moveInstructions[1]
+    viewPoint[2] += moveInstructions[2]'''
+    a += alpha
+    b += beta
+    viewPoint = carthesian(dist, a, b)
     updatePoints(pointList, viewPoint)
     gameDisplay.fill(white)
-    rect(gameDisplay, (250, 50, 50))
     if polygon:
         poly(gameDisplay, (100, 100, 1), ((100, 140), (120, 120), (130, 160), (120, 200), (110, 180)))
     for i in range(len(faceList)):
