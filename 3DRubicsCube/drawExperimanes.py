@@ -234,9 +234,10 @@ def pointOntoPlane(point1, point2, plane):
         return [0, 0, 0]
 
 
-def rotatePoints(vector, pointsRot):
+def rotatePoints(vector, points):
     # the idea is to rotate points on a plane defined by orthogonal vector so, that
     # the vector points to dir 0,0,1.
+
 
     # Material used:
     # https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
@@ -247,33 +248,33 @@ def rotatePoints(vector, pointsRot):
     # xz plane
     dotProd = vector[0] * dir[0] + vector[2] * dir[2]
     lenProd = math.sqrt(vector[0] ** 2 + vector[2] ** 2) * math.sqrt(dir[0] ** 2 + dir[2] ** 2)
-    beta = -math.acos(dotProd / lenProd)
-
+    beta = -math.acos(dotProd / lenProd)*(vector[0]/abs(vector[0]))
+    #print("beta: ", beta*180/math.pi)
     # rotation around y-axis:
     # | x cos θ + z sin θ| = |x'|
     # |−x sin θ + z cos θ| = |z'|
-    for i in range(len(pointsRot)):
-        pointsRot[i] = [pointsRot[i][0] * math.cos(beta) + pointsRot[i][2] * math.sin(beta), pointsRot[i][1],
-                     -pointsRot[i][0] * math.sin(beta) + pointsRot[i][2] * math.cos(beta)]
+    for i in range(len(points)):
+        points[i] = [points[i][0] * math.cos(beta) + points[i][2] * math.sin(beta), points[i][1],
+                     -points[i][0] * math.sin(beta) + points[i][2] * math.cos(beta)]
     newVector = [vector[0] * math.cos(beta) + vector[2] * math.sin(beta), vector[1],
                  -vector[0] * math.sin(beta) + vector[2] * math.cos(beta)]
 
     # yz plane
     dotProd = newVector[1] * dir[1] + newVector[2] * dir[2]
     lenProd = math.sqrt(newVector[1] ** 2 + newVector[2] ** 2) * math.sqrt(dir[1] ** 2 + dir[2] ** 2)
-    alpha = math.acos(dotProd / lenProd)
-
+    alpha = math.acos(dotProd / lenProd)*(newVector[1]/abs(newVector[1]))
+    #print("alpha: ", alpha*180/math.pi)
     # rotation around x-axis:
     # | y cos θ − z sin θ| = |y'|
     # | y sin θ + z cos θ| = |z'|
-    for i in range(len(pointsRot)):
-        pointsRot[i] = [pointsRot[i][0], pointsRot[i][1] * math.cos(alpha) - pointsRot[i][2] * math.sin(alpha),
-                     pointsRot[i][1]*math.sin(alpha) + pointsRot[i][2]*math.cos(alpha)]
+    for i in range(len(points)):
+        points[i] = [points[i][0], points[i][1] * math.cos(alpha) - points[i][2] * math.sin(alpha),
+                     points[i][1]*math.sin(alpha) + points[i][2]*math.cos(alpha)]
 
     # finalVector = [newVector[0], newVector[1] * math.cos(alpha) - newVector[2] * math.sin(alpha),
     #               newVector[1] * math.sin(alpha) + newVector[2] * math.cos(alpha)]
 
-    return pointsRot
+    return points
 
 # CREATING THE DISPLAY
 
