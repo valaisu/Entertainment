@@ -184,6 +184,36 @@ def fccw(kuutio):
     kuutio[0] = tempEdge
 
 # TODO: implement the rotation of the middles
+# midL, midR, midU, midD, sideCw, sideCcw
+# where mid is middle square of side 1
+
+def midL(kuutio):
+    #1035
+    kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6] = kuutio[5][3:6], kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6]
+
+def midR(kuutio):
+    kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6] = kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6], kuutio[1][3:6]
+
+def midU(kuutio):
+    toBack, fromBack = kuutio[2][1::3], kuutio[5][1::3]
+    reverseList(toBack), reverseList(fromBack)
+    kuutio[2][1::3], kuutio[0][1::3], kuutio[4][1::3], kuutio[5][1::3] = kuutio[0][1::3], kuutio[4][1::3], fromBack, toBack
+
+def midD(kuutio):
+    toBack, fromBack = kuutio[4][1::3], kuutio[5][1::3]
+    reverseList(toBack), reverseList(fromBack)
+    kuutio[2][1::3], kuutio[0][1::3], kuutio[4][1::3], kuutio[5][1::3] = fromBack, kuutio[2][1::3], kuutio[0][1::3], toBack
+
+def sideCw(kuutio):
+    fromLeft, fromRight = kuutio[1][1::3], kuutio[3][1::3]
+    reverseList(fromLeft), reverseList(fromRight)
+    kuutio[1][1::3], kuutio[2][3:6], kuutio[3][1::3], kuutio[4][3:6] = kuutio[4][3:6], fromLeft, kuutio[2][3:6], fromRight
+
+def sideCcw(kuutio):
+    fromDown, fromUp = kuutio[4][3:6], kuutio[2][3:6]
+    reverseList(fromDown), reverseList(fromUp)
+    kuutio[1][1::3], kuutio[2][3:6], kuutio[3][1::3], kuutio[4][3:6] = fromUp, kuutio[3][1::3], fromDown, kuutio[1][1::3]
+
 
 cols = ['W', 'B', 'R', 'Y', 'O', 'G']
 cube = []
@@ -197,10 +227,7 @@ for i in range(6):
 cube[4] = [1,2,3,4,5,6,7,8,9]
 cube[5] = [1,2,3,4,5,6,7,8,9]
 printCube(cube)
-bccw(cube)
+sideCcw(cube)
 printCube(cube)
-bccw(cube)
-bccw(cube)
-bccw(cube)
-
+sideCcw(cube)
 printCube(cube)
