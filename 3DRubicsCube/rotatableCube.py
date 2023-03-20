@@ -46,50 +46,89 @@ class square:
 
 def createCubeSides(center, squareSize):
     RGB_Palette = ((0, 155, 72), (255, 255, 255), (183, 18, 52), (255, 213, 0), (0, 70, 173), (255, 88, 0))
+
     sides = []
-    for i in range(2):
-        sideTemp = []
-        for j in range(3):
-            for k in range(3):
-                sideTemp.append(square(RGB_Palette[i],
-                    [[center[i]+3*(i-0.5)*squareSize, center[j]+(j-1.5)*squareSize, center[k]+(k-0.5)*squareSize],
-                    [center[i]+3*(i-0.5)*squareSize, center[j]+(j-0.5)*squareSize, center[k]+(k-0.5)*squareSize],
-                    [center[i]+3*(i-0.5)*squareSize, center[j]+(j-0.5)*squareSize, center[k]+(k-1.5)*squareSize],
-                    [center[i]+3*(i-0.5)*squareSize, center[j]+(j-1.5)*squareSize, center[k]+(k-1.5)*squareSize]],
-                    [center[i]+3*(i-0.5)*squareSize, center[j]+(j-1)*squareSize, center[k]+(k-1)*squareSize]
-                ))
-        sides.append(sideTemp)
+    # Front
+    sideTemp = []
+    for j in range(3):
+        for i in range(3):
+            sideTemp.append(square((0,0,0) if j == i == 1 else RGB_Palette[0], [
+                [center[0]+(i-1.5)*squareSize, center[1]+(0.5-j)*squareSize, center[2]+1.5*squareSize],
+                [center[0]+(i-1.5)*squareSize, center[1]+(1.5-j)*squareSize, center[2]+1.5*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]+(1.5-j)*squareSize, center[2]+1.5*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]+(0.5-j)*squareSize, center[2]+1.5*squareSize]],
+                [center[0]+(i-1)*squareSize, center[1]+(1-j)*squareSize, center[2]+1.5*squareSize]
+            ))
+    sides.append(sideTemp)
 
-    for i in range(2):
-        sideTemp = []
-        for j in range(3):
-            for k in range(3):
-                sideTemp.append(square(RGB_Palette[i+2],
-                    [[center[j]+(j-1.5)*squareSize, center[k]+(k-0.5)*squareSize, center[i]+3*(i-0.5)*squareSize],
-                    [center[j]+(j-0.5)*squareSize, center[k]+(k-0.5)*squareSize, center[i]+3*(i-0.5)*squareSize],
-                    [center[j]+(j-0.5)*squareSize, center[k]+(k-1.5)*squareSize, center[i]+3*(i-0.5)*squareSize],
-                    [center[j]+(j-1.5)*squareSize, center[k]+(k-1.5)*squareSize, center[i]+3*(i-0.5)*squareSize]],
-                    [center[j]+(j-1)*squareSize, center[k]+(k-1)*squareSize, center[i]+3*(i-0.5)*squareSize]
-                ))
-        sides.append(sideTemp)
+    # Left
+    sideTemp = []
+    for j in range(3):
+        for k in range(3):
+            sideTemp.append(square(RGB_Palette[1], [
+                [center[0]-1.5*squareSize, center[1]+(0.5-j)*squareSize, center[2]+(k-0.5)*squareSize],
+                [center[0]-1.5*squareSize, center[1]+(1.5-j)*squareSize, center[2]+(k-0.5)*squareSize],
+                [center[0]-1.5*squareSize, center[1]+(1.5-j)*squareSize, center[2]+(k-1.5)*squareSize],
+                [center[0]-1.5*squareSize, center[1]+(0.5-j)*squareSize, center[2]+(k-1.5)*squareSize]],
+                [center[0]-1.5*squareSize, center[1]+(1-j)*squareSize, center[2]+(k-1)*squareSize]
+            ))
+    sides.append(sideTemp)
 
-    for i in range(2):
-        sideTemp = []
-        for j in range(3):
-            for k in range(3):
-                sideTemp.append(square(RGB_Palette[i+4],
-                    [[center[k]+(k-0.5)*squareSize, center[i]+3*(i-0.5)*squareSize, center[j]+(j-1.5)*squareSize],
-                    [center[k]+(k-0.5)*squareSize, center[i]+3*(i-0.5)*squareSize, center[j]+(j-0.5)*squareSize],
-                    [center[k]+(k-1.5)*squareSize, center[i]+3*(i-0.5)*squareSize, center[j]+(j-0.5)*squareSize],
-                    [center[k]+(k-1.5)*squareSize, center[i]+3*(i-0.5)*squareSize, center[j]+(j-1.5)*squareSize]],
-                    [center[k]+(k-1)*squareSize, center[i]+3*(i-0.5)*squareSize, center[j]+(j-1)*squareSize]
-                ))
-        sides.append(sideTemp)
-    # sides: 2, 4, 5, 3, 6, 1
-    #   3       /   2     \
-    # 2 1 4 6  |  1 0 3 5  |
-    #   5       \   4     /
-    return [sides[5],sides[0],sides[3],sides[1],sides[2], sides[4]]
+    # Up
+    sideTemp = []
+    for k in range(3):
+        for i in range(3):
+            sideTemp.append(square((0,0,0) if k == i == 1 else RGB_Palette[2], [
+                [center[0]+(i-1.5)*squareSize, center[1]+1.5*squareSize, center[k]+(k-0.5)*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]+1.5*squareSize, center[k]+(k-0.5)*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]+1.5*squareSize, center[k]+(k-1.5)*squareSize],
+                [center[0]+(i-1.5)*squareSize, center[1]+1.5*squareSize, center[k]+(k-1.5)*squareSize]],
+                [center[0]+(i-1)*squareSize, center[1]+1.5*squareSize, center[k]+(k-1)*squareSize]
+            ))
+    sides.append(sideTemp)
+
+    # Right
+    sideTemp = []
+    for j in range(3):
+        for k in range(3):
+            sideTemp.append(square(RGB_Palette[3], [
+                [center[0]+1.5*squareSize, center[1]+(0.5-j)*squareSize, center[2]+(1.5-k)*squareSize],
+                [center[0]+1.5*squareSize, center[1]+(1.5-j)*squareSize, center[2]+(1.5-k)*squareSize],
+                [center[0]+1.5*squareSize, center[1]+(1.5-j)*squareSize, center[2]+(0.5-k)*squareSize],
+                [center[0]+1.5*squareSize, center[1]+(0.5-j)*squareSize, center[2]+(0.5-k)*squareSize]],
+                [center[0]+1.5*squareSize, center[1]+(1-j)*squareSize, center[2]+(1-k)*squareSize]
+            ))
+    sides.append(sideTemp)
+
+    # Down
+    sideTemp = []
+    for k in range(3):
+        for i in range(3):
+            sideTemp.append(square(RGB_Palette[4], [
+                [center[0]+(i-1.5)*squareSize, center[1]-1.5*squareSize, center[k]+(1.5-k)*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]-1.5*squareSize, center[k]+(1.5-k)*squareSize],
+                [center[0]+(i-0.5)*squareSize, center[1]-1.5*squareSize, center[k]+(0.5-k)*squareSize],
+                [center[0]+(i-1.5)*squareSize, center[1]-1.5*squareSize, center[k]+(0.5-k)*squareSize]],
+                [center[0]+(i-1)*squareSize, center[1]-1.5*squareSize, center[k]+(1-k)*squareSize]
+            ))
+    sides.append(sideTemp)
+
+    # Back
+    sideTemp = []
+    for j in range(3):
+        for i in range(3):
+            sideTemp.append(square(RGB_Palette[5], [
+                [center[0]+(0.5-i)*squareSize, center[1]+(0.5-j)*squareSize, center[2]-1.5*squareSize],
+                [center[0]+(0.5-i)*squareSize, center[1]+(1.5-j)*squareSize, center[2]-1.5*squareSize],
+                [center[0]+(1.5-i)*squareSize, center[1]+(1.5-j)*squareSize, center[2]-1.5*squareSize],
+                [center[0]+(1.5-i)*squareSize, center[1]+(0.5-j)*squareSize, center[2]-1.5*squareSize]],
+                [center[0]+(1-i)*squareSize, center[1]+(1-j)*squareSize, center[2]-1.5*squareSize]
+            ))
+    sides.append(sideTemp)
+    return sides
+    #   3       /   2     \   /   U     \
+    # 2 1 4 6  |  1 0 3 5  | |  L F R B  |
+    #   5       \   4     /   \   D     /
 
 
 # def create cube, a list of squares
@@ -219,13 +258,6 @@ def rotatePoints(vector, points):
     return points
 
 
-# def order the faces based on middle point distance from the viewpoint
-'''def drawOrderList(viewpoint, cubel):
-    ret = cubel
-    ret.sort(key=lambda x: distance(x[4], viewpoint), reverse=True)
-    return ret'''
-
-
 # the rotation logic it self
 #   all 18 rotations
 #   make them call the updating of positions for the involved faces
@@ -249,8 +281,25 @@ def dcw(kuutio):
     rotate = [7,4,1,8,5,2,9,6,3]
     tempEdge = []
     for i in range(9):
-        tempEdge.append(kuutio[4][rotate[i]-1])
-    kuutio[4] = tempEdge
+        tempEdge.append(kuutio[4][rotate[i]-1].color)
+    for i in range(9):
+        kuutio[4][i].color = tempEdge[i]
+
+
+def dccw(kuutio):
+    l1 = flatten([kuutio[1][6:9], kuutio[0][6:9], kuutio[3][6:9], kuutio[5][6:9]])
+    l2 = flatten([kuutio[0][6:9], kuutio[3][6:9], kuutio[5][6:9], kuutio[1][6:9]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[4][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[4][i].color = tempEdge[i]
+
 
 def ucw(kuutio):
     l1 = flatten([kuutio[1][0:3], kuutio[0][0:3], kuutio[3][0:3], kuutio[5][0:3]])
@@ -262,8 +311,24 @@ def ucw(kuutio):
     rotate = [7, 4, 1, 8, 5, 2, 9, 6, 3]
     tempEdge = []
     for i in range(9):
-        tempEdge.append(kuutio[2][rotate[i] - 1])
-    kuutio[2] = tempEdge
+        tempEdge.append(kuutio[2][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[2][i].color = tempEdge[i]
+
+
+def uccw(kuutio):
+    l1 = flatten([kuutio[1][0:3], kuutio[0][0:3], kuutio[3][0:3], kuutio[5][0:3]])
+    l2 = flatten([kuutio[5][0:3], kuutio[1][0:3], kuutio[0][0:3], kuutio[3][0:3]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[2][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[2][i].color = tempEdge[i]
 
 
 def lcw(kuutio):
@@ -278,8 +343,154 @@ def lcw(kuutio):
     rotate = [7, 4, 1, 8, 5, 2, 9, 6, 3]
     tempEdge = []
     for i in range(9):
-        tempEdge.append(kuutio[1][rotate[i] - 1])
-    kuutio[1] = tempEdge
+        tempEdge.append(kuutio[1][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[1][i].color = tempEdge[i]
+
+def lccw(kuutio):
+    toBot, fromBot = kuutio[2][0::3], kuutio[5][2::3]
+    reverseList(toBot), reverseList(fromBot)
+    l1 = flatten([kuutio[0][0::3], kuutio[4][0::3], kuutio[5][2::3], kuutio[2][0::3]])
+    l2 = flatten([kuutio[4][0::3], fromBot, toBot, kuutio[0][0::3]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[1][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[1][i].color = tempEdge[i]
+
+
+def rcw(kuutio):
+    toBack, fromBack = kuutio[2][2::3], kuutio[5][0::3]
+    reverseList(toBack), reverseList(fromBack)
+    l1 = flatten([kuutio[0][2::3], kuutio[2][2::3], kuutio[5][0::3], kuutio[4][2::3]])
+    l2 = flatten([kuutio[4][2::3], kuutio[0][2::3], toBack, fromBack])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [7, 4, 1, 8, 5, 2, 9, 6, 3]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[3][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[3][i].color = tempEdge[i]
+
+def rccw(kuutio):
+    toBack, fromBack = kuutio[4][2::3], kuutio[5][0::3]
+    reverseList(toBack), reverseList(fromBack)
+    l1 = flatten([kuutio[0][2::3], kuutio[2][2::3], kuutio[5][0::3], kuutio[4][2::3]])
+    l2 = flatten([kuutio[2][2::3], fromBack, toBack, kuutio[0][2::3]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[3][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[3][i].color = tempEdge[i]
+
+def bcw(kuutio):
+    fromTop, fromBot = kuutio[2][0:3], kuutio[4][6:9]
+    reverseList(fromTop), reverseList(fromBot)
+    l1 = flatten([kuutio[3][2::3], kuutio[2][0:3], kuutio[1][0::3], kuutio[4][6:9]])
+    l2 = flatten([fromBot, kuutio[3][2::3], fromTop, kuutio[1][0::3]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [7, 4, 1, 8, 5, 2, 9, 6, 3]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[5][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[5][i].color = tempEdge[i]
+
+def bccw(kuutio):
+    toTop, toBot = kuutio[1][0::3], kuutio[3][2::3]
+    reverseList(toBot), reverseList(toTop)
+    l1 = flatten([kuutio[3][2::3], kuutio[2][0:3], kuutio[1][0::3], kuutio[4][6:9]])
+    l2 = flatten([kuutio[2][0:3], toTop, kuutio[4][6:9], toBot])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[5][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[5][i].color = tempEdge[i]
+
+
+def fcw(kuutio):
+    toBot, toTop = kuutio[3][0::3], kuutio[1][2::3]
+    reverseList(toBot), reverseList(toTop)
+    l1 = flatten([kuutio[1][2::3], kuutio[2][6:9], kuutio[3][0::3], kuutio[4][0:3]])
+    l2 = flatten([kuutio[4][0:3], toTop, kuutio[2][6:9], toBot])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [7, 4, 1, 8, 5, 2, 9, 6, 3]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[0][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[0][i].color = tempEdge[i]
+
+def fccw(kuutio):
+    fromBot, fromTop = kuutio[4][0:3], kuutio[2][6:9]
+    reverseList(fromBot), reverseList(fromTop)
+    l1 = flatten([kuutio[1][2::3], kuutio[2][6:9], kuutio[3][0::3], kuutio[4][0:3]])
+    l2 = flatten([fromTop, kuutio[3][0::3], fromBot, kuutio[1][2::3]])
+    colors = [l2[i].color for i in range(len(l2))]
+    for i in range(len(colors)):
+        l1[i].color = colors[i]
+
+    rotate = [3, 6, 9, 2, 5, 8, 1, 4, 7]
+    tempEdge = []
+    for i in range(9):
+        tempEdge.append(kuutio[0][rotate[i] - 1].color)
+    for i in range(9):
+        kuutio[0][i].color = tempEdge[i]
+
+# TODO: implement the rest of moves, then make controls relative to cube spatial rotation
+
+
+def midL(kuutio):
+    #1035
+    kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6] = kuutio[5][3:6], kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6]
+
+def midR(kuutio):
+    kuutio[1][3:6], kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6] = kuutio[0][3:6], kuutio[3][3:6], kuutio[5][3:6], kuutio[1][3:6]
+
+def midU(kuutio):
+    toBack, fromBack = kuutio[2][1::3], kuutio[5][1::3]
+    reverseList(toBack), reverseList(fromBack)
+    kuutio[2][1::3], kuutio[0][1::3], kuutio[4][1::3], kuutio[5][1::3] = kuutio[0][1::3], kuutio[4][1::3], fromBack, toBack
+
+def midD(kuutio):
+    toBack, fromBack = kuutio[4][1::3], kuutio[5][1::3]
+    reverseList(toBack), reverseList(fromBack)
+    kuutio[2][1::3], kuutio[0][1::3], kuutio[4][1::3], kuutio[5][1::3] = fromBack, kuutio[2][1::3], kuutio[0][1::3], toBack
+
+def sideCw(kuutio):
+    fromLeft, fromRight = kuutio[1][1::3], kuutio[3][1::3]
+    reverseList(fromLeft), reverseList(fromRight)
+    kuutio[1][1::3], kuutio[2][3:6], kuutio[3][1::3], kuutio[4][3:6] = kuutio[4][3:6], fromLeft, kuutio[2][3:6], fromRight
+
+def sideCcw(kuutio):
+    fromDown, fromUp = kuutio[4][3:6], kuutio[2][3:6]
+    reverseList(fromDown), reverseList(fromUp)
+    kuutio[1][1::3], kuutio[2][3:6], kuutio[3][1::3], kuutio[4][3:6] = fromUp, kuutio[3][1::3], fromDown, kuutio[1][1::3]
+
 
 
 # MOVING THE VIEWPOINT
@@ -356,11 +567,31 @@ while not crashed:
             crashed = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_e:
-                dcw(cube)
+                bcw(cube)
             if event.key == pygame.K_r:
                 ucw(cube)
             if event.key == pygame.K_t:
                 lcw(cube)
+            if event.key == pygame.K_d:
+                fcw(cube)
+            if event.key == pygame.K_f:
+                dcw(cube)
+            if event.key == pygame.K_g:
+                rcw(cube)
+
+            if event.key == pygame.K_y:
+                bccw(cube)
+            if event.key == pygame.K_u:
+                uccw(cube)
+            if event.key == pygame.K_i:
+                lccw(cube)
+            if event.key == pygame.K_h:
+                fccw(cube)
+            if event.key == pygame.K_j:
+                dccw(cube)
+            if event.key == pygame.K_k:
+                rccw(cube)
+
 
             if event.key == pygame.K_DOWN:
                 alpha -= 0.6
