@@ -1,6 +1,30 @@
 import math
 import pygame
 
+# Controls
+
+# The whole cube can be rotated around with arrow keys. The rotation is done by moving
+# the viewpoint in spherical coordinates. The controls are somewhat
+# unintuitive (the user can control α and β of spherical coordinates).
+
+# Keys 1 and 2 zoom the cube in and out
+
+# The sides of the cube can be rotated with the keys from q to o and
+# a to l. Each key is bind to one of 18 different possible moves
+
+
+# Improvement ideas
+
+# The cube can be rotated around x, y and z axis
+
+# Add an option to use relative controls for rotating the sides, meaning
+# the controls change as the user rotates the whole cube (this way fewer
+# controls are needed and the ones udes are mode intuitive
+
+# Add animations to rotating the sides
+
+
+# THE PROGRAM ITSELF
 
 
 # The cube displayed in 2D:
@@ -24,7 +48,6 @@ class square:
     def updatePos(self, points, middle):
         self.points = points
         self.middle = middle
-
 
 
 def createCubeSides(center, squareSize):
@@ -116,6 +139,7 @@ def createCubeSides(center, squareSize):
     return sides
 
 
+# adds all individual squares to an array so they can later be ordered by the distance from the viewpoint
 def createCubeList(kuutio):
     cubelistL = []
     for i in range(6):
@@ -128,6 +152,9 @@ def distance(viewpoint, point):
     return math.sqrt((viewpoint[0]-point[0])**2+(viewpoint[1]-point[1])**2+(viewpoint[2]-point[2])**2)
 
 
+# Moves a point onto a plane, that is perpendicular to line between the origo and the viewpoint
+# The place on the plane is where the plane is intersected by the line between the viewpoint and
+# the points original position
 def pointOntoPlane(point1, point2, plane):
     # materials used:
     # https://math.stackexchange.com/questions/1429131/find-an-equation-of-the-plane-perpendicular-to-vector-v-and-passing-through-the
@@ -201,7 +228,7 @@ def pointOntoPlane(point1, point2, plane):
 
 def rotatePoints(vector, points):
     # the idea is to rotate points on a plane defined by orthogonal vector so, that
-    # the vector points to dir 0,0,1.
+    # the new planes orthogonal vector points to direction 0,0,1.
 
     # Material used:
     # https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
@@ -533,7 +560,7 @@ def poly(surf, color, coords):
 
 
 cube = createCubeSides([0,0,0], 100)
-cubeList = createCubeList(cube) # created also in the game loop
+cubeList = createCubeList(cube)
 viewpoint = [6000, 0, 0]
 zoom = 1
 shift = (128*3, 128*3)
@@ -608,7 +635,13 @@ while not crashed:
             if event.key == pygame.K_l:
                 bcw(cube)
 
+            # zoom around
+            if event.key == pygame.K_1:
+                zoom *= 1.1
+            if event.key == pygame.K_2:
+                zoom /= 1.1
 
+        # rotate the whole cube
             if event.key == pygame.K_DOWN:
                 alpha -= 0.6
             if event.key == pygame.K_UP:
