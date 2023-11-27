@@ -26,6 +26,16 @@ side task: improve graphics
 """
 
 
+class Button:
+    def __init__(self, x, y, image, image_selected, select_radius, offset):
+        self.x = x+offset
+        self.y = y+offset
+        self.image = image
+        self.image_selected = image_selected
+        self.selected = False
+        self.select_radius = select_radius
+
+
 # Initialize Pygame
 pygame.init()
 
@@ -41,6 +51,7 @@ WHITE = (255, 255, 255)
 GREEN = (50, 220, 50)
 BLUE_D = (100, 100, 200)
 BLACK = (0, 0, 0)
+GRAY_BROWN = (172,157,129)
 YELLOW = (200,200,50)
 
 # positive directions are y: up, x, up-right
@@ -56,10 +67,18 @@ empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
 warrior = pygame.transform.scale(pygame.image.load("warrior.png"), (60, 60))
 archer = pygame.transform.scale(pygame.image.load("archer.png"), (60, 60))
 
-# Buttons
+# Action bar buttons
 move = pygame.transform.scale(pygame.image.load("move.png"), (60, 60))
 target = pygame.transform.scale(pygame.image.load("target.png"), (60, 60))
 fortify = pygame.transform.scale(pygame.image.load("fortify.png"), (60, 60))
+move_s = pygame.transform.scale(pygame.image.load("move_selected.png"), (60, 60))
+target_s = pygame.transform.scale(pygame.image.load("target_selected.png"), (60, 60))
+fortify_s = pygame.transform.scale(pygame.image.load("fortify_selected.png"), (60, 60))
+
+button_list = [Button(560, 620, move, move_s, 30, 30),
+               Button(630, 620, target, target_s, 30, 30),
+               Button(700, 620, fortify, fortify_s, 30, 30)]
+
 
 terrains_dict = {0: empty, 1: hills, 2: forest}
 
@@ -93,25 +112,30 @@ class Unit:
         self.range = 0
 
 
-def check_for_button_clicked(button_center, click_location, radius=30):
+def check_for_button_clicked(button: Button, click_location):
     """
     Checks if click is within [radius] pixels from the click location
-    :param button_center: (float, float)
+    :param button: Button
     :param click_location: (int, int)
     :return: Bool
     """
-    if math.sqrt(math.pow(button_center[0]-click_location[0], 2) + math.pow(button_center[1]-click_location[1], 2)) < radius:
+    if math.sqrt(math.pow(button.x-click_location[0], 2) + math.pow(button.y-click_location[1], 2)) < button.select_radius:
         return True
     else:
         return False
 
 
-def draw_action_bar(surface):
+def draw_action_bar(surface, buttons: list[Button]):
     # TODO: add actions to the buttons
     pygame.draw.polygon(surface, BLUE_D, [[0, 600], [800, 600], [800, 700], [0, 700]])
-    surface.blit(move, (560, 620))
+    for button in buttons:
+        if button.selected:
+            surface.blit(button.image_selected, (button.x-30, button.y-30))
+        else:
+            surface.blit(button.image, (button.x-30, button.y-30))
+    '''surface.blit(move, (560, 620))
     surface.blit(target, (630, 620))
-    surface.blit(fortify, (700, 620))
+    surface.blit(fortify, (700, 620))'''
 
 
 def move_unit(unit, sq_from, sq_to):
@@ -254,6 +278,10 @@ def click_square(x: float, y: float, center: (int, int), hexes: list[Square]):
         return None
 
 
+def unselect_buttons(buttons: list[Button]):
+    for button in buttons:
+        button.selected = False
+
 
 hexagons = create_board(2, 50)
 # Create the screen
@@ -274,16 +302,27 @@ while True:
             pygame.quit()
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
+            button_clicked = False
             x, y = event.pos
-            selected_hex = (click_square(x, y, (400, 300), hexagons))
-            print(selected_hex)
+            # Check if a button was clicked
+            for i, but in enumerate(button_list):
+                if check_for_button_clicked(but, (x, y)):
+                    unselect_buttons(button_list)
+                    button_clicked = True
+                    button_list[i].selected = True
+            # Check which hexagon was clicked (if any)
+            if not button_clicked:
+                new_selection = (click_square(x, y, (400, 300), hexagons))
+                if new_selection is None or new_selection != selected_hex:
+                    unselect_buttons(button_list)
+                selected_hex = new_selection
 
-    screen.fill(BLACK)
+    screen.fill(GRAY_BROWN)
 
     # Draw the hexagon board (5x5 in this example)
     draw_hexagon_board(screen, hexagons)
 
-    draw_action_bar(screen)
+    draw_action_bar(screen, button_list)
 
     # Highlights a selected hexagon
     if selected_hex is not None:
