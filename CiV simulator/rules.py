@@ -1,3 +1,5 @@
+import copy
+
 import pygame
 import sys
 import math
@@ -15,7 +17,8 @@ Create the board from hexagons CHECK
     draw the hexagons CHECK
     add hills, rivers, forests CHECK
 Create the units 
-    unit movement
+    unit movement CHECK
+    display unit stats
     unit attack
     turns
 
@@ -81,10 +84,11 @@ button_list = [Button(560, 620, move, move_s, 30, 30),
 
 
 terrains_dict = {0: empty, 1: hills, 2: forest}
+movement_costs = {0: 1, 1: 2, 2: 2}
 
 
 class Square:
-    def __init__(self, x, y, size, terrain, board_center):
+    def __init__(self, x, y, size, terrain, board_center, index):
         self.x = x
         self.y = y
         self.size = size
@@ -93,6 +97,8 @@ class Square:
         self.unit = None
 
         self.center = (np.cos(np.pi/6)*2*x*size*np.sin(np.pi/3), np.cos(np.pi/6)*(y + x*np.cos(np.pi/3))*2*size)
+        self.movement_cost = movement_costs[self.terrain]
+        self.index = index
 
 
 # warrior: 2 movement, melee
@@ -126,7 +132,6 @@ def check_for_button_clicked(button: Button, click_location):
 
 
 def draw_action_bar(surface, buttons: list[Button]):
-    # TODO: add actions to the buttons
     pygame.draw.polygon(surface, BLUE_D, [[0, 600], [800, 600], [800, 700], [0, 700]])
     for button in buttons:
         if button.selected:
@@ -138,12 +143,13 @@ def draw_action_bar(surface, buttons: list[Button]):
     surface.blit(fortify, (700, 620))'''
 
 
+
 def move_unit(unit, sq_from, sq_to):
     """
     Moves a unit from one square to another
-    :param unit:
-    :param sq_from:
-    :param sq_to:
+    :param unit: Unit
+    :param sq_from: Square
+    :param sq_to: Square
     :return: None
     """
     sq_from.unit = None
@@ -159,14 +165,36 @@ def are_neighbors(s1: Square, s2: Square):
     """
     return (s1.x-s2.x, s1.y-s2.y) in directions
 
-def get_neighbors(s: Square):
+
+def square_by_coordinates(squares, x, y):
+    """
+    Returns the square with coordinates x,y
+    :param squares: list[Square]
+    :param x: int
+    :param y: int
+    :return: Square
+    """
+    for square in squares:
+        if square.x == x and square.y == y:
+            return square
+
+def get_neighbors(s: Square, squares: list[Square]):
     """
     Gets the neighbors of a square
     :param s: square
     :return: list[square]
     """
-    return [(s.x+d[0], s.y+d[1]) for d in directions]
+    neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
+    return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if square_by_coordinates(squares, x, y)]
 
+def get_neighbor_indices(s: Square, squares: list[Square]):
+    """
+    Gets the indices of the neighboring squares
+    :param s: square
+    :return: list[square]
+    """
+    neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
+    return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if square_by_coordinates(squares, x, y)]
 
 def create_board(amount: int, size: float):
     """
@@ -175,7 +203,7 @@ def create_board(amount: int, size: float):
     :param size:
     :return: list[square]
     """
-    hexes = [Square(0,0,50, 1, CENTER)]
+    hexes = [Square(0,0,50, 1, CENTER, 0)]
     tot = 0
     for i in range(amount):
         for dir in range(len(directions)):
@@ -184,7 +212,7 @@ def create_board(amount: int, size: float):
                 x = (i+1)*directions[dir][0] + j*directions[(dir-2)%6][0]
                 y = (i+1)*directions[dir][1] + j*directions[(dir-2)%6][1]
                 ter = random.choices([0, 1, 2], weights=[2, 1, 1])[0]
-                hexes.append(Square(x, y, size, ter, CENTER))
+                hexes.append(Square(x, y, size, ter, CENTER, tot))
     return hexes
 
 
@@ -236,6 +264,36 @@ def highlight_hexagon(surface, sq: Square, center: (int, int)):
     pygame.draw.polygon(surface, YELLOW, points, 6)
 
 
+def pathfinding(start: Square, end: Square, squares: list[Square]):
+    """
+    A really basic pathfinding algorithm, return movement cost
+    TODO: improve efficiency
+    :param start: Square
+    :param end: Square
+    :param squares:
+    :return: int
+    """
+    previously_visited_og = {start.index: 0}
+    previously_visited = copy.deepcopy(previously_visited_og)
+
+    def expand():
+        for key, value in previously_visited_og.items():
+            neighbors = get_neighbor_indices(hexagons[key], squares)
+            for neighbor in neighbors:
+                if neighbor in previously_visited:
+                    if value + hexagons[neighbor].movement_cost < previously_visited[neighbor]:
+                        previously_visited[neighbor] = value + hexagons[neighbor].movement_cost
+                else:
+                    previously_visited[neighbor] = value + hexagons[neighbor].movement_cost
+    while end.index not in previously_visited:
+        expand()
+        previously_visited_og = copy.deepcopy(previously_visited)
+    for i in range(3):
+        expand()
+        previously_visited_og = copy.deepcopy(previously_visited)
+    return previously_visited[end.index]
+
+
 def new_turn(board: list[Square]):
     """
     Heals units and refreshes their movement
@@ -248,6 +306,7 @@ def new_turn(board: list[Square]):
         if sq.unit.movement_left == sq.unit.movement_max:
             sq.unit.health = min(100, sq.unit.health+10)
         sq.unit.movement_left = sq.unit.movement_max
+
 
 # Function to draw the hexagon board
 def draw_hexagon_board(surface, squares: list[Square]):
@@ -313,13 +372,25 @@ while True:
             # Check which hexagon was clicked (if any)
             if not button_clicked:
                 new_selection = (click_square(x, y, (400, 300), hexagons))
+
+                # Check if unit should be moved
+                if selected_hex is not None and new_selection is not None:
+                    if button_list[0].selected:
+                        # check if enough movement
+                        movement_required = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
+                        if hexagons[selected_hex].unit.movement_left >= movement_required:
+                            hexagons[selected_hex].unit.movement_left -= movement_required
+                            move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[new_selection])
+                        else:
+                            print("not enough movement")
+
+                # unselect action
                 if new_selection is None or new_selection != selected_hex:
                     unselect_buttons(button_list)
                 selected_hex = new_selection
 
     screen.fill(GRAY_BROWN)
 
-    # Draw the hexagon board (5x5 in this example)
     draw_hexagon_board(screen, hexagons)
 
     draw_action_bar(screen, button_list)
