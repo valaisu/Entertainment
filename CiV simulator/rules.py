@@ -18,7 +18,7 @@ Create the board from hexagons CHECK
     add hills, rivers, forests CHECK
 Create the units 
     unit movement CHECK
-    display unit stats
+    display unit stats CHECK
     unit attack
     turns
 
@@ -55,7 +55,10 @@ GREEN = (50, 220, 50)
 BLUE_D = (100, 100, 200)
 BLACK = (0, 0, 0)
 GRAY_BROWN = (172,157,129)
+DARKER_BROWN = (142,137,119)
 YELLOW = (200,200,50)
+
+font_small = pygame.font.Font(None, 18)
 
 # positive directions are y: up, x, up-right
 # but as the hexagon has 6 sides, some re-defining needs to be made
@@ -74,13 +77,16 @@ archer = pygame.transform.scale(pygame.image.load("archer.png"), (60, 60))
 move = pygame.transform.scale(pygame.image.load("move.png"), (60, 60))
 target = pygame.transform.scale(pygame.image.load("target.png"), (60, 60))
 fortify = pygame.transform.scale(pygame.image.load("fortify.png"), (60, 60))
+end_turn = pygame.transform.scale(pygame.image.load("end_turn.png"), (80, 80))
+
 move_s = pygame.transform.scale(pygame.image.load("move_selected.png"), (60, 60))
 target_s = pygame.transform.scale(pygame.image.load("target_selected.png"), (60, 60))
 fortify_s = pygame.transform.scale(pygame.image.load("fortify_selected.png"), (60, 60))
 
-button_list = [Button(560, 620, move, move_s, 30, 30),
-               Button(630, 620, target, target_s, 30, 30),
-               Button(700, 620, fortify, fortify_s, 30, 30)]
+button_list = [Button(460, 620, move, move_s, 30, 30),
+               Button(530, 620, target, target_s, 30, 30),
+               Button(600, 620, fortify, fortify_s, 30, 30),
+               Button(690, 600, end_turn, end_turn, 40, 40)]
 
 
 terrains_dict = {0: empty, 1: hills, 2: forest}
@@ -268,6 +274,9 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
     """
     A really basic pathfinding algorithm, return movement cost
     TODO: improve efficiency
+    iteratively find squares accecible by 0, 1, 2... moves.
+    when new squares are found, they are added to the list
+    algo ends when destination is first reached
     :param start: Square
     :param end: Square
     :param squares:
@@ -342,6 +351,23 @@ def unselect_buttons(buttons: list[Button]):
         button.selected = False
 
 
+def display_stats(surface, unit: Unit):
+    pygame.draw.polygon(surface, DARKER_BROWN, [[0, 600], [250, 600], [250, 700], [0, 700]])
+    surface.blit(unit.image, (20, 620))
+
+    def draw_text(text, size, x, y, color=BLACK):
+        font = pygame.font.SysFont("comicsans", size)
+        label = font.render(text, 1, color)
+        surface.blit(label, (x, y))
+
+    draw_text("Health: ", 18, 100, 620)
+    draw_text("Movement: ", 18, 100, 645)
+    draw_text("Strength: ", 18, 100, 670)
+
+    draw_text(str(unit.health), 18, 200, 620)
+    draw_text(str(unit.movement_left) + "/" + str(unit.movement_max), 18, 200, 645)
+    draw_text(str(unit.attack), 18, 200, 670)
+
 hexagons = create_board(2, 50)
 # Create the screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -398,6 +424,14 @@ while True:
     # Highlights a selected hexagon
     if selected_hex is not None:
         highlight_hexagon(screen, hexagons[selected_hex], CENTER)
+        # and display stats
+        if hexagons[selected_hex].unit:
+            display_stats(screen, hexagons[selected_hex].unit)
+
+    # If end turn is chosen
+    if button_list[3].selected:
+        unselect_buttons(button_list)
+        new_turn(hexagons)
 
     pygame.display.flip()
 
