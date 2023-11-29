@@ -1,31 +1,16 @@
 import copy
-
 import pygame
 import sys
 import math
 import numpy as np
 import random
 
+from units import Unit, create_unit
 
 """
 The goal is to create rules to play a bit of Civilization
 More specifically, this program aims to be a small-scale 
 battle simulator for 2+ units.
-
-Roadmap:
-Create the board from hexagons CHECK
-    draw the hexagons CHECK
-    add hills, rivers, forests CHECK
-Create the units 
-    unit movement CHECK
-    display unit stats CHECK
-    unit attack
-    turns
-
-side task: improve graphics
-    nice pictures
-    animations
-
 """
 
 
@@ -124,22 +109,7 @@ class Square:
 
 
 # warrior: 2 movement, melee
-class Unit:
-    def __init__(self, type, location, team, image):
-        self.type = type
-        self.health = 100
-        self.strength = 20
-        self.movement_max = 2
-        self.movement_left = self.movement_max
-        self.location = location
-        self.image = warrior_list[team-1]
 
-        self.fortified = False
-
-        self.ranged = False
-        self.range = 0
-
-        self.team = team
 
 
 def check_for_button_clicked(button: Button, click_location):
@@ -417,8 +387,8 @@ pygame.display.set_caption('Hexagon Board')
 
 
 # MANUALLY ADD UNITS HERE
-hexagons[9].unit = Unit(1, (hexagons[9].x, hexagons[9].y), 1, warrior_blue)
-hexagons[15].unit = Unit(1, (hexagons[15].x, hexagons[15].y), 2, warrior_red)
+hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
+hexagons[15].unit = create_unit("swordsman", (hexagons[15].x, hexagons[15].y), 2)
 
 selected_hex = None
 
