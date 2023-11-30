@@ -54,26 +54,6 @@ hills = pygame.transform.scale(pygame.image.load("hills.png"), (100, 100))
 forest = pygame.transform.scale(pygame.image.load("forest.png"), (100, 100))
 empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
 
-# Units
-warrior = pygame.transform.scale(pygame.image.load("warrior.png"), (60, 60))
-archer = pygame.transform.scale(pygame.image.load("archer.png"), (60, 60))
-
-
-def change_color(image_path: str, color: (int, int, int, int)):
-    img = pygame.transform.scale(pygame.image.load(image_path), (60, 60))
-    for x in range(img.get_width()):
-        for y in range(img.get_height()):
-            pixel_color = img.get_at((x, y))
-            if pixel_color == (0, 0, 0, 255):  # Check if the pixel is black
-                img.set_at((x, y), color)  # Change to blue
-    return img
-
-
-warrior_blue = change_color("warrior.png", (100, 100, 200, 255))
-warrior_red = change_color("warrior.png", (200, 50, 50, 255))
-warrior_list = [warrior_blue, warrior_red]
-# TODO: make above process a function
-
 # Action bar buttons
 move = pygame.transform.scale(pygame.image.load("move.png"), (60, 60))
 target = pygame.transform.scale(pygame.image.load("target.png"), (60, 60))
@@ -92,6 +72,7 @@ button_list = [Button(460, 620, move, move_s, 30, 30),
 
 terrains_dict = {0: empty, 1: hills, 2: forest}
 movement_costs = {0: 1, 1: 2, 2: 2}
+terrain_combat_modifier = {0: 0, 1: 3, 2: 3, 3: 6}
 
 
 class Square:
@@ -334,9 +315,43 @@ def click_square(x: float, y: float, center: (int, int), hexes: list[Square]):
         return None
 
 
+def defence_modifier(square_defender: Square, attacker_square: Square, all_squares: list[Square]):
+    modifier = 0
+    #unit health
+    modifier -= round(10 - square_defender.unit.health/10)
+    #terrain
+    modifier += terrain_combat_modifier[square_defender.terrain]
+    #support
+    # let's assume all teams are always at war with each other
+    neighbors = get_neighbors(square_defender, all_squares)
+    for neighbor in neighbors:
+        if neighbor.unit and neighbor.unit.team == square_defender.unit.team:
+            modifier += 2
+    #TODO: rivers
+    return modifier
+
+
+def offence_modifier(attacker_square: Square, defender_square: Square, all_squares: list[Square]):
+    modifier = 0
+    # unit health
+    modifier -= round(10 - attacker_square.unit.health / 10)
+    # flanking
+    # let's assume all teams are always at war with each other
+    defender_neighbors = get_neighbors(defender_square, all_squares)
+    for neighbor in defender_neighbors:
+        if neighbor.unit and neighbor.unit.team != defender_square.unit.team:
+            modifier += 2
+    modifier -= 2 #the attacker should not count into flanking bonus
+    #TODO: rivers
+    return modifier
+
+
 def combat_melee(attacker: Square, defender: Square):
     attacker.unit.movement_left = 0
-    strength_difference = attacker.unit.strength - defender.unit.strength
+    strength_difference = ((attacker.unit.strength + offence_modifier(attacker, defender, hexagons)) -
+                           (defender.unit.strength + defence_modifier(defender, attacker, hexagons)))
+    print("attacker: ", attacker.unit.strength + offence_modifier(attacker, defender, hexagons))
+    print("defender: ", defender.unit.strength + defence_modifier(defender, attacker, hexagons))
     attacker.unit.health = round(attacker.unit.health-30*np.exp(-strength_difference/25))
     defender.unit.health = round(defender.unit.health-30*np.exp(strength_difference/25))
     # if both "die", only the one that dies more really dies
@@ -388,6 +403,7 @@ pygame.display.set_caption('Hexagon Board')
 
 # MANUALLY ADD UNITS HERE
 hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
+hexagons[10].unit = create_unit("swordsman", (hexagons[10].x, hexagons[10].y), 1)
 hexagons[15].unit = create_unit("swordsman", (hexagons[15].x, hexagons[15].y), 2)
 
 selected_hex = None
