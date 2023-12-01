@@ -241,35 +241,65 @@ def highlight_hexagon(surface, sq: Square, center: (int, int)):
 
 def pathfinding(start: Square, end: Square, squares: list[Square]):
     """
-    A really basic pathfinding algorithm, return movement cost
-    TODO: improve efficiency
-    iteratively find squares accecible by 0, 1, 2... moves.
-    when new squares are found, they are added to the list
-    algo ends when destination is first reached
-    :param start: Square
-    :param end: Square
-    :param squares:
-    :return: int
-    """
-    previously_visited_og = {start.index: 0}
-    previously_visited = copy.deepcopy(previously_visited_og)
+    find the shortest path between two squares
 
-    def expand():
-        for key, value in previously_visited_og.items():
-            neighbors = get_neighbor_indices(hexagons[key], squares)
-            for neighbor in neighbors:
-                if neighbor in previously_visited:
-                    if value + hexagons[neighbor].movement_cost < previously_visited[neighbor]:
-                        previously_visited[neighbor] = value + hexagons[neighbor].movement_cost
-                else:
-                    previously_visited[neighbor] = value + hexagons[neighbor].movement_cost
-    while end.index not in previously_visited:
-        expand()
-        previously_visited_og = copy.deepcopy(previously_visited)
-    for i in range(3):
-        expand()
-        previously_visited_og = copy.deepcopy(previously_visited)
-    return previously_visited[end.index]
+    algorithm: initialize following with staring square
+    [(square, movement cost)]
+    ind = 0
+    while target not found
+        for all neighbors of square[ind]
+            add (neighbor, movement cost to neighbor) to list, keep sorted by movement cost
+        return target if found
+        ind += 1
+
+    :param start:
+    :param end:
+    :param squares:
+    :return: int, int = movement, index of second-last square
+    """
+    def binary_search(sorted_list: list[float], x: float):
+        """
+        returns the index of first element grater than x
+        if there are none, returns the length of the list
+        :param sorted_list:
+        :param x:
+        :return: int
+        """
+        left, right = 0, len(sorted_list) - 1
+        result_index = None
+        while left <= right:
+            mid = (left + right) // 2
+            if sorted_list[mid] > x:
+                result_index = mid
+                right = mid - 1
+            else:
+                left = mid + 1
+        if result_index is None:
+            result_index = len(sorted_list)
+        return result_index
+
+    movement_list = [0]
+    square_indices = [start.index]
+    ind = 0
+
+    while True:
+        neighbors = get_neighbors(squares[square_indices[ind]], squares)
+        for n in neighbors:
+            if n.unit and n.unit.team != start.unit.team:
+                continue
+            movement = n.movement_cost + movement_list[ind]
+            if n.index in square_indices:
+                if movement < movement_list[square_indices.index(n.index)]:
+                    movement_list[square_indices.index(n.index)] = movement
+            else:
+                if n.index == end.index:
+                    return movement, squares[square_indices[ind]].index
+                i = binary_search(movement_list, movement)
+                square_indices.insert(i, n.index)
+                movement_list.insert(i, movement)
+        ind += 1
+        if len(movement_list) == ind:
+            return -1
 
 
 def new_turn(board: list[Square]):
@@ -310,6 +340,7 @@ def click_square(x: float, y: float, center: (int, int), hexes: list[Square]):
     distances = [(np.sqrt(math.pow(hexes[i].center[0]+center[0]-x, 2) + math.pow(hexes[i].center[1]+center[1]-y, 2)),i) for i in range(len(hexes))]
     distances.sort()
     if distances[0][0] < 60:
+        print(hexes[distances[0][1]].x, hexes[distances[0][1]].y)
         return distances[0][1]
     else:
         return None
@@ -352,6 +383,7 @@ def combat_melee(attacker: Square, defender: Square):
                            (defender.unit.strength + defence_modifier(defender, attacker, hexagons)))
     print("attacker: ", attacker.unit.strength + offence_modifier(attacker, defender, hexagons))
     print("defender: ", defender.unit.strength + defence_modifier(defender, attacker, hexagons))
+    print("Strength difference: " + str(strength_difference))
     attacker.unit.health = round(attacker.unit.health-30*np.exp(-strength_difference/25))
     defender.unit.health = round(defender.unit.health-30*np.exp(strength_difference/25))
     # if both "die", only the one that dies more really dies
@@ -394,6 +426,13 @@ def display_stats(surface, unit: Unit):
     draw_text(str(unit.movement_left) + "/" + str(unit.movement_max), 18, 200, 645)
     draw_text(str(unit.strength), 18, 200, 670)
 
+def generate_rivers(board: list[Square], amount: int = 1):
+    # the rever can turn to the same direction only 5 times,
+    # then it hits itself.
+    start = random.randint(0, len(board))
+    start2 = random.choice(get_neighbors(board[start], board))
+    pass
+
 
 hexagons = create_board(2, 50)
 # Create the screen
@@ -432,12 +471,13 @@ while True:
                     if button_list[0].selected:
                         # check if enough movement
                         # TODO: if full movement, can always move one
-                        movement_required = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
+                        movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
                         if hexagons[selected_hex].unit.movement_left >= movement_required:
                             # check if initiates combat
                             if hexagons[new_selection].unit:
                                 if hexagons[selected_hex].unit.team != hexagons[new_selection].unit.team:
-                                    combat_melee(hexagons[selected_hex], hexagons[new_selection])
+                                    move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[previous_square])
+                                    combat_melee(hexagons[previous_square], hexagons[new_selection])
                             else:
                                 hexagons[selected_hex].unit.movement_left -= movement_required
                                 move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[new_selection])
