@@ -191,6 +191,27 @@ def create_board(amount: int, size: float):
     return hexes
 
 
+
+def get_hexagon_borders(sq: Square, center: (int, int)):
+    """
+    Gets the borders of a hexagon
+    :param sq: Square
+    :param center: (int, int)
+    :return: list[(int, int)]
+    """
+    x = sq.x
+    y = sq.y
+    size = sq.size
+    angle = np.pi/3
+    points = []
+    for i in range(6):
+        x_i = round(x + size * math.cos(angle * i) + sq.center[0] + center[0])
+        y_i = round(y + size * math.sin(angle * i) + sq.center[1] + center[1])
+        points.append((x_i, y_i))
+    lines = [(points[i], points[(i+1)%6]) for i in range(6)]
+    return lines
+
+
 # Function to draw a hexagon
 def draw_hexagon(surface, sq: Square, center: (int, int)):
     """
@@ -239,9 +260,31 @@ def highlight_hexagon(surface, sq: Square, center: (int, int)):
     pygame.draw.polygon(surface, YELLOW, points, 6)
 
 
-def pathfinding(start: Square, end: Square, squares: list[Square]):
+def binary_search(sorted_list: list[float], x: float):
     """
-    find the shortest path between two squares
+    returns the index of first element grater than x
+    if there are none, returns the length of the list
+    :param sorted_list:
+    :param x:
+    :return: int
+    """
+    left, right = 0, len(sorted_list) - 1
+    result_index = None
+    while left <= right:
+        mid = (left + right) // 2
+        if sorted_list[mid] > x:
+            result_index = mid
+            right = mid - 1
+        else:
+            left = mid + 1
+    if result_index is None:
+        result_index = len(sorted_list)
+    return result_index
+
+def pathfinding(start: Square, end: Square, squares: list[Square]):
+    # TODO fix bug attacking over friend
+    """
+    finds the shortest path between two squares
 
     algorithm: initialize following with staring square
     [(square, movement cost)]
@@ -257,27 +300,6 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
     :param squares:
     :return: int, int = movement, index of second-last square
     """
-    def binary_search(sorted_list: list[float], x: float):
-        """
-        returns the index of first element grater than x
-        if there are none, returns the length of the list
-        :param sorted_list:
-        :param x:
-        :return: int
-        """
-        left, right = 0, len(sorted_list) - 1
-        result_index = None
-        while left <= right:
-            mid = (left + right) // 2
-            if sorted_list[mid] > x:
-                result_index = mid
-                right = mid - 1
-            else:
-                left = mid + 1
-        if result_index is None:
-            result_index = len(sorted_list)
-        return result_index
-
     movement_list = [0]
     square_indices = [start.index]
     ind = 0
@@ -285,8 +307,6 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
     while True:
         neighbors = get_neighbors(squares[square_indices[ind]], squares)
         for n in neighbors:
-            if n.unit and n.unit.team != start.unit.team:
-                continue
             movement = n.movement_cost + movement_list[ind]
             if n.index in square_indices:
                 if movement < movement_list[square_indices.index(n.index)]:
@@ -294,12 +314,52 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
             else:
                 if n.index == end.index:
                     return movement, squares[square_indices[ind]].index
+                if n.unit and n.unit.team != start.unit.team:
+                    continue
                 i = binary_search(movement_list, movement)
                 square_indices.insert(i, n.index)
                 movement_list.insert(i, movement)
         ind += 1
         if len(movement_list) == ind:
             return -1
+
+
+def get_movement_squares(start: Square, squares: list[Square]):
+    max_movement = start.unit.movement_left
+
+    movement_list = [0]
+    square_indices = [start.index]
+    ind = 0
+
+    while True:
+
+        if movement_list[ind] > max_movement:
+            break
+        neighbors = get_neighbors(squares[square_indices[ind]], squares)
+        for n in neighbors:
+            if n.unit and n.unit.team != start.unit.team:
+                continue
+            movement = n.movement_cost + movement_list[ind]
+            if movement > max_movement:
+                continue
+            if n.index in square_indices:
+                continue
+            i = binary_search(movement_list, movement)
+            square_indices.insert(i, n.index)
+            movement_list.insert(i, movement)
+        ind += 1
+        if len(movement_list) == ind:
+            break
+    return square_indices
+
+
+def display_movement(start: Square, squares: list[Square], screen):
+    movement_area = get_movement_squares(start, squares)
+    area_lines = []
+    for square in movement_area:
+        area_lines += get_hexagon_borders(squares[square], CENTER)
+    for line in area_lines:
+        pygame.draw.line(screen, BLUE_D, line[0], line[1], 3)
 
 
 def new_turn(board: list[Square]):
@@ -340,7 +400,7 @@ def click_square(x: float, y: float, center: (int, int), hexes: list[Square]):
     distances = [(np.sqrt(math.pow(hexes[i].center[0]+center[0]-x, 2) + math.pow(hexes[i].center[1]+center[1]-y, 2)),i) for i in range(len(hexes))]
     distances.sort()
     if distances[0][0] < 60:
-        print(hexes[distances[0][1]].x, hexes[distances[0][1]].y)
+        #print(hexes[distances[0][1]].x, hexes[distances[0][1]].y)
         return distances[0][1]
     else:
         return None
@@ -434,7 +494,7 @@ def generate_rivers(board: list[Square], amount: int = 1):
     pass
 
 
-hexagons = create_board(2, 50)
+hexagons = create_board(3, 50)
 # Create the screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Hexagon Board')
@@ -443,7 +503,7 @@ pygame.display.set_caption('Hexagon Board')
 # MANUALLY ADD UNITS HERE
 hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
 hexagons[10].unit = create_unit("swordsman", (hexagons[10].x, hexagons[10].y), 1)
-hexagons[15].unit = create_unit("swordsman", (hexagons[15].x, hexagons[15].y), 2)
+hexagons[15].unit = create_unit("archer", (hexagons[15].x, hexagons[15].y), 2)
 
 selected_hex = None
 
@@ -462,6 +522,7 @@ while True:
                     unselect_buttons(button_list)
                     button_clicked = True
                     button_list[i].selected = True
+
             # Check which hexagon was clicked (if any)
             if not button_clicked:
                 new_selection = (click_square(x, y, (400, 300), hexagons))
@@ -501,6 +562,10 @@ while True:
         # and display stats
         if hexagons[selected_hex].unit:
             display_stats(screen, hexagons[selected_hex].unit)
+
+        if button_list[0].selected:
+            pass
+            display_movement(hexagons[selected_hex], hexagons, screen)
 
     # If end turn is chosen
     if button_list[3].selected:
