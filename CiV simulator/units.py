@@ -5,10 +5,16 @@ AMOUNT_OF_PLAYERS = 3
 
 # Units
 warrior = pygame.transform.scale(pygame.image.load("warrior.png"), (60, 60))
+warrior_f = pygame.transform.scale(pygame.image.load("warrior_fortified.png"), (60, 60))
 archer = pygame.transform.scale(pygame.image.load("archer.png"), (60, 60))
+archer_f = pygame.transform.scale(pygame.image.load("archer_fortified.png"), (60, 60))
 swordsman = pygame.transform.scale(pygame.image.load("swordsman.png"), (60, 60))
+swordsman_f = pygame.transform.scale(pygame.image.load("swordsman_fortified.png"), (60, 60))
 slinger = pygame.transform.scale(pygame.image.load("slinger.png"), (60, 60))
+slinger_f = pygame.transform.scale(pygame.image.load("slinger_fortified.png"), (60, 60))
 chariot = pygame.transform.scale(pygame.image.load("chariot.png"), (60, 60))
+chariot_f = pygame.transform.scale(pygame.image.load("chariot_fortified.png"), (60, 60))
+
 
 
 def generate_different_colors(img_path: str, num: int):
@@ -35,17 +41,27 @@ def generate_different_colors(img_path: str, num: int):
 
 
 images_warrior = generate_different_colors("warrior.png", 3)
+images_warrior_f = generate_different_colors("warrior_fortified.png", 3)
 images_archer = generate_different_colors("archer.png", 3)
+images_archer_f = generate_different_colors("archer_fortified.png", 3)
 images_swordsman = generate_different_colors("swordsman.png", 3)
+images_swordsman_f = generate_different_colors("swordsman_fortified.png", 3)
 images_chariot = generate_different_colors("chariot.png", 3)
+images_chariot_f = generate_different_colors("chariot_fortified.png", 3)
 images_slinger = generate_different_colors("slinger.png", 3)
+images_slinger_f = generate_different_colors("slinger_fortified.png", 3)
 
 
-unit_stats = {"warrior": {"strength_melee": 20, "strength_ranged": 0, "range": 0, "movement": 2, "images": images_warrior},
-              "archer": {"strength_melee": 15, "strength_ranged": 25, "range": 2, "movement": 2, "images": images_archer},
-              "chariot": {"strength_melee": 28, "strength_ranged": 0, "range": 0, "movement": 3, "images": images_chariot},
-              "swordsman": {"strength_melee": 35, "strength_ranged": 0, "range": 0, "movement": 2, "images": images_swordsman},
-              "slinger": {"strength_melee": 5, "strength_ranged": 15, "range": 1, "movement": 2, "images": images_slinger},}
+unit_stats = {"warrior": {"strength_melee": 20, "strength_ranged": 0, "range": 0, "movement": 2,
+                          "images": (images_warrior, images_warrior_f)},
+              "archer": {"strength_melee": 15, "strength_ranged": 25, "range": 2, "movement": 2,
+                         "images": (images_archer, images_archer_f)},
+              "chariot": {"strength_melee": 28, "strength_ranged": 0, "range": 0, "movement": 3,
+                          "images": (images_chariot, images_chariot_f)},
+              "swordsman": {"strength_melee": 35, "strength_ranged": 0, "range": 0, "movement": 2,
+                            "images": (images_swordsman, images_swordsman_f)},
+              "slinger": {"strength_melee": 5, "strength_ranged": 15, "range": 1, "movement": 2,
+                          "images": (images_slinger, images_slinger_f)},}
 
 
 class Unit:
@@ -58,7 +74,8 @@ class Unit:
         self.movement_max = unit_stats[name]["movement"]
         self.movement_left = self.movement_max
         self.location = location
-        self.image = unit_stats[name]["images"][team-1]
+        self.image = unit_stats[name]["images"][0][team-1]
+        self.image_fortified = unit_stats[name]["images"][1][team-1]
         self.fortified = False
         self.team = team
 
