@@ -70,11 +70,12 @@ end_turn = pygame.transform.scale(pygame.image.load("end_turn.png"), (80, 80))
 move_s = pygame.transform.scale(pygame.image.load("move_selected.png"), (60, 60))
 target_s = pygame.transform.scale(pygame.image.load("target_selected.png"), (60, 60))
 fortify_s = pygame.transform.scale(pygame.image.load("fortify_selected.png"), (60, 60))
+end_turn_s = pygame.transform.scale(pygame.image.load("end_turn_selected.png"), (80, 80))
 
 button_list = [Button(460, 620, move, move_s, 30, 30),
                Button(530, 620, target, target_s, 30, 30),
                Button(600, 620, fortify, fortify_s, 30, 30),
-               Button(690, 600, end_turn, end_turn, 40, 40)]
+               Button(690, 600, end_turn, end_turn_s, 40, 40)]
 
 
 terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh}
@@ -361,17 +362,18 @@ def can_shoot_2(start: Square, target: Square, squares: list[Square]):
     :param squares: list[Square]
     :return: Bool
     """
-    # TODO: calculate shooting range better, it has bugs
+
     start_n = set(get_neighbors(start, squares))
     target_n = set(get_neighbors(target, squares))
     intersect = start_n.intersection(target_n)
 
+    #if the intersect squares are not neighbors, then start and target are
     if len(intersect) == 2:
         as_list = list(intersect)
         if as_list[0] not in get_neighbors(as_list[1], squares):
             return True
 
-    if start.terrain == 2:
+    if start.terrain in [1, 3]:
         for sq in intersect:
             if sq.terrain not in [3]:
                 return True
@@ -382,7 +384,6 @@ def can_shoot_2(start: Square, target: Square, squares: list[Square]):
 
 
 def get_unit_range(s: Square, squares: list[Square]):
-    #TODO: fix bug with marshes
     if s.unit.range == 1:
         return get_neighbors(s, squares)
     else:
@@ -420,7 +421,8 @@ def get_movement_squares(start: Square, squares: list[Square]):
                 continue
             movement = n.movement_cost + movement_list[ind]
             if movement > max_movement:
-                if n.movement_cost != movement:
+                # can always move one if has max movement
+                if n.movement_cost != movement or start.unit.movement_left != start.unit.movement_max:
                     continue
             if n.index in square_indices:
                 continue
@@ -609,6 +611,8 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.MOUSEBUTTONUP:
+            button_list[3].selected = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             button_clicked = False
             x, y = event.pos
@@ -680,7 +684,6 @@ while True:
 
     # If end turn is chosen
     if button_list[3].selected:
-        unselect_buttons(button_list)
         new_turn(hexagons)
 
     pygame.display.flip()
