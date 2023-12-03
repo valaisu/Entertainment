@@ -418,7 +418,8 @@ def get_movement_squares(start: Square, squares: list[Square]):
                 continue
             movement = n.movement_cost + movement_list[ind]
             if movement > max_movement:
-                continue
+                if n.movement_cost != movement:
+                    continue
             if n.index in square_indices:
                 continue
             i = binary_search(movement_list, movement)
@@ -611,9 +612,9 @@ while True:
                         continue
                     if button_list[0].selected:
                         # check if enough movement
-                        # TODO: if full movement, can always move one
                         movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
-                        if hexagons[selected_hex].unit.movement_left >= movement_required:
+                        if (hexagons[selected_hex].unit.movement_left >= movement_required or
+                            hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max):
                             # check if initiates combat
                             if hexagons[new_selection].unit:
                                 if hexagons[selected_hex].unit.team != hexagons[new_selection].unit.team:
@@ -621,6 +622,8 @@ while True:
                                     combat_melee(hexagons[previous_square], hexagons[new_selection])
                             else:
                                 hexagons[selected_hex].unit.movement_left -= movement_required
+                                if hexagons[selected_hex].unit.movement_left < 0:
+                                    hexagons[selected_hex].unit.movement_left = 0
                                 move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[new_selection])
                         else:
                             print("not enough movement")
