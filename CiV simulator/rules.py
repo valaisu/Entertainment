@@ -50,9 +50,11 @@ font_small = pygame.font.Font(None, 18)
 directions = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1)]
 
 # Terrain
+empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
 hills = pygame.transform.scale(pygame.image.load("hills.png"), (100, 100))
 forest = pygame.transform.scale(pygame.image.load("forest.png"), (100, 100))
-empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
+hills_and_forest = pygame.transform.scale(pygame.image.load("hills_and_forest.png"), (100, 100))
+marsh = pygame.transform.scale(pygame.image.load("marsh.png"), (100, 100))
 
 # Action bar buttons
 move = pygame.transform.scale(pygame.image.load("move.png"), (60, 60))
@@ -70,9 +72,9 @@ button_list = [Button(460, 620, move, move_s, 30, 30),
                Button(690, 600, end_turn, end_turn, 40, 40)]
 
 
-terrains_dict = {0: empty, 1: hills, 2: forest}
-movement_costs = {0: 1, 1: 2, 2: 2}
-terrain_combat_modifier = {0: 0, 1: 3, 2: 3, 3: 6}
+terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh}
+movement_costs = {0: 1, 1: 2, 2: 2, 3: 3, 4: 2}
+terrain_combat_modifier = {0: 0, 1: 3, 2: 3, 3: 6, 4: -3}
 
 
 class Square:
@@ -113,10 +115,6 @@ def draw_action_bar(surface, buttons: list[Button]):
             surface.blit(button.image_selected, (button.x-30, button.y-30))
         else:
             surface.blit(button.image, (button.x-30, button.y-30))
-    '''surface.blit(move, (560, 620))
-    surface.blit(target, (630, 620))
-    surface.blit(fortify, (700, 620))'''
-
 
 
 def move_unit(unit, sq_from, sq_to):
@@ -186,7 +184,7 @@ def create_board(amount: int, size: float):
                 tot += 1
                 x = (i+1)*directions[dir][0] + j*directions[(dir-2)%6][0]
                 y = (i+1)*directions[dir][1] + j*directions[(dir-2)%6][1]
-                ter = random.choices([0, 1, 2], weights=[2, 1, 1])[0]
+                ter = random.choices([0, 1, 2, 3, 4], weights=[6, 2, 2, 2, 1])[0]
                 hexes.append(Square(x, y, size, ter, CENTER, tot))
     return hexes
 
@@ -282,7 +280,6 @@ def binary_search(sorted_list: list[float], x: float):
     return result_index
 
 def pathfinding(start: Square, end: Square, squares: list[Square]):
-    # TODO fix bug attacking over friend
     """
     finds the shortest path between two squares
 
@@ -313,6 +310,10 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
                     movement_list[square_indices.index(n.index)] = movement
             else:
                 if n.index == end.index:
+                    # Check that the unit does not attack from square with a friendly unit already there
+                    if squares[square_indices[ind]].unit and squares[square_indices[ind]].index != start.index:
+                        if n.unit:
+                            continue
                     return movement, squares[square_indices[ind]].index
                 if n.unit and n.unit.team != start.unit.team:
                     continue
@@ -324,9 +325,28 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
             return -1
 
 
-def get_movement_squares(start: Square, squares: list[Square]):
-    max_movement = start.unit.movement_left
+def can_shoot(start: Square, target: Square, squares: list[Square]):
+    # assumes the range is 2
 
+    if start.terrain == 2:
+        return True
+    start_n = set(get_neighbors(start, squares))
+    target_n = set(get_neighbors(target, squares))
+    intersect = start_n.intersection(target_n)
+    for sq in intersect:
+        if sq.terrain not in [1, 2]:
+            return True
+    return False
+
+
+def get_movement_squares(start: Square, squares: list[Square]):
+    """
+    Returns the indices of the squares where unit can move
+    :param start:
+    :param squares:
+    :return: list[int]
+    """
+    max_movement = start.unit.movement_left
     movement_list = [0]
     square_indices = [start.index]
     ind = 0
@@ -354,6 +374,7 @@ def get_movement_squares(start: Square, squares: list[Square]):
 
 
 def display_movement(start: Square, squares: list[Square], screen):
+    # TODO: display with red the ones with enemy
     movement_area = get_movement_squares(start, squares)
     area_lines = []
     for square in movement_area:
