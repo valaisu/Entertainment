@@ -644,7 +644,8 @@ while True:
                     # check if enough movement
                     movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
                     if (hexagons[selected_hex].unit.movement_left >= movement_required or
-                        hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max):
+                        (hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max and
+                         movement_required == hexagons[new_selection].movement_cost)):
                         # check if initiates combat
                         if hexagons[new_selection].unit:
                             if hexagons[selected_hex].unit.team != hexagons[new_selection].unit.team:
