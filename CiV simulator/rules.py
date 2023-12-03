@@ -38,6 +38,7 @@ CENTER = (SCREEN_WIDTH/2, DISPLAY_HEIGHT/2)
 WHITE = (255, 255, 255)
 GREEN = (50, 220, 50)
 BLUE_D = (100, 100, 200)
+RED = (150, 50, 50)
 BLACK = (0, 0, 0)
 GRAY_BROWN = (172,157,129)
 DARKER_BROWN = (142,137,119)
@@ -48,6 +49,10 @@ font_small = pygame.font.Font(None, 18)
 # positive directions are y: up, x, up-right
 # but as the hexagon has 6 sides, some re-defining needs to be made
 directions = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1)]
+directions2 = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1),
+               (0, 2), (2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2),
+               (1, 1), (2, -1), (1, -2), (-1, -1), (-2, 1), (-1, 2)]
+
 
 # Terrain
 empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
@@ -151,23 +156,38 @@ def square_by_coordinates(squares, x, y):
         if square.x == x and square.y == y:
             return square
 
-def get_neighbors(s: Square, squares: list[Square]):
+
+def get_neighbors(s: Square, squares: list[Square], range=1):
     """
     Gets the neighbors of a square
     :param s: square
     :return: list[square]
     """
-    neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
-    return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if square_by_coordinates(squares, x, y)]
+    if range == 1:
+        neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
+        return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
+    elif range == 2:
+        neighbor_coordinates = [(s.x + d[0], s.y + d[1]) for d in directions2]
+        return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
 
-def get_neighbor_indices(s: Square, squares: list[Square]):
+
+def get_neighbor_indices(s: Square, squares: list[Square], range=1):
     """
     Gets the indices of the neighboring squares
     :param s: square
     :return: list[square]
     """
-    neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
-    return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if square_by_coordinates(squares, x, y)]
+    if range == 1:
+        neighbor_coordinates = [(s.x+d[0], s.y+d[1]) for d in directions]
+        return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
+    elif range == 2:
+        neighbor_coordinates = [(s.x + d[0], s.y + d[1]) for d in directions2]
+        return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
+
 
 def create_board(amount: int, size: float):
     """
@@ -325,18 +345,55 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
             return -1
 
 
-def can_shoot(start: Square, target: Square, squares: list[Square]):
-    # assumes the range is 2
+def display_areas(squares: list[Square], screen, color):
 
-    if start.terrain == 2:
-        return True
+    for s in squares:
+        area_lines = get_hexagon_borders(s, CENTER)
+        for line in area_lines:
+            pygame.draw.line(screen, color, line[0], line[1], 3)
+
+
+def can_shoot_2(start: Square, target: Square, squares: list[Square]):
+    """
+    Checks if possible to shoot from start to target, assuming the range is 2
+    :param start: Square
+    :param target: Square
+    :param squares: list[Square]
+    :return: Bool
+    """
     start_n = set(get_neighbors(start, squares))
     target_n = set(get_neighbors(target, squares))
     intersect = start_n.intersection(target_n)
+
+    if len(intersect) == 2:
+        as_list = list(intersect)
+        if as_list[0] not in get_neighbors(as_list[1], squares):
+            return True
+
+    if start.terrain == 2:
+        for sq in intersect:
+            if sq.terrain not in [3]:
+                return True
     for sq in intersect:
-        if sq.terrain not in [1, 2]:
+        if sq.terrain not in [1, 2, 3]:
             return True
     return False
+
+
+def get_unit_range(s: Square, squares: list[Square]):
+    if s.unit.range == 1:
+        return get_neighbors(s, squares)
+    else:
+        candidates = get_neighbors(s, squares, 2)
+        accepted = []
+        for c in candidates:
+            if can_shoot_2(s, c, squares):
+                accepted.append(c)
+        return accepted
+
+
+def display_range(s: Square, squares: list[Square], screen):
+    display_areas(get_unit_range(s, squares), screen, RED)
 
 
 def get_movement_squares(start: Square, squares: list[Square]):
@@ -550,6 +607,8 @@ while True:
 
                 # Check if unit should be moved
                 if selected_hex is not None and new_selection is not None:
+                    if selected_hex == new_selection:
+                        continue
                     if button_list[0].selected:
                         # check if enough movement
                         # TODO: if full movement, can always move one
@@ -585,8 +644,10 @@ while True:
             display_stats(screen, hexagons[selected_hex].unit)
 
         if button_list[0].selected:
-            pass
             display_movement(hexagons[selected_hex], hexagons, screen)
+
+        if button_list[1].selected:
+            display_range(hexagons[selected_hex], hexagons, screen)
 
     # If end turn is chosen
     if button_list[3].selected:
