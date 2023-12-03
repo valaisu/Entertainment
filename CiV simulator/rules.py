@@ -361,6 +361,7 @@ def can_shoot_2(start: Square, target: Square, squares: list[Square]):
     :param squares: list[Square]
     :return: Bool
     """
+    # TODO: calculate shooting range better, it has bugs
     start_n = set(get_neighbors(start, squares))
     target_n = set(get_neighbors(target, squares))
     intersect = start_n.intersection(target_n)
@@ -381,6 +382,7 @@ def can_shoot_2(start: Square, target: Square, squares: list[Square]):
 
 
 def get_unit_range(s: Square, squares: list[Square]):
+    #TODO: fix bug with marshes
     if s.unit.range == 1:
         return get_neighbors(s, squares)
     else:
@@ -485,34 +487,36 @@ def click_square(x: float, y: float, center: (int, int), hexes: list[Square]):
         return None
 
 
-def defence_modifier(square_defender: Square, attacker_square: Square, all_squares: list[Square]):
+def defence_modifier(square_defender: Square, attacker_square: Square, all_squares: list[Square], melee=True):
     modifier = 0
     #unit health
     modifier -= round(10 - square_defender.unit.health/10)
     #terrain
     modifier += terrain_combat_modifier[square_defender.terrain]
     #support
-    # let's assume all teams are always at war with each other
-    neighbors = get_neighbors(square_defender, all_squares)
-    for neighbor in neighbors:
-        if neighbor.unit and neighbor.unit.team == square_defender.unit.team:
-            modifier += 2
+        # let's assume all teams are always at war with each other
+    if melee:
+        neighbors = get_neighbors(square_defender, all_squares)
+        for neighbor in neighbors:
+            if neighbor.unit and neighbor.unit.team == square_defender.unit.team:
+                modifier += 2
     #TODO: rivers
     return modifier
 
 
-def offence_modifier(attacker_square: Square, defender_square: Square, all_squares: list[Square]):
+def offence_modifier(attacker_square: Square, defender_square: Square, all_squares: list[Square], melee=True):
     modifier = 0
     # unit health
     modifier -= round(10 - attacker_square.unit.health / 10)
-    # flanking
-    # let's assume all teams are always at war with each other
-    defender_neighbors = get_neighbors(defender_square, all_squares)
-    for neighbor in defender_neighbors:
-        if neighbor.unit and neighbor.unit.team != defender_square.unit.team:
-            modifier += 2
-    modifier -= 2 #the attacker should not count into flanking bonus
-    #TODO: rivers
+    if melee:
+        # flanking
+        # let's assume all teams are always at war with each other
+        defender_neighbors = get_neighbors(defender_square, all_squares)
+        for neighbor in defender_neighbors:
+            if neighbor.unit and neighbor.unit.team != defender_square.unit.team:
+                modifier += 2
+        modifier -= 2 #the attacker should not count into flanking bonus
+        #TODO: rivers
     return modifier
 
 
@@ -541,6 +545,19 @@ def combat_melee(attacker: Square, defender: Square):
         defender.unit = attacker.unit
         defender.unit.movement_left = 0
         attacker.unit = None
+
+
+def combat_ranged(attacker: Square, defender: Square):
+    strength_difference = ((attacker.unit.ranged_strength + offence_modifier(attacker, defender, hexagons, False)) -
+                           (defender.unit.strength + defence_modifier(defender, attacker, hexagons, False)))
+    print("attacker: ", attacker.unit.ranged_strength + offence_modifier(attacker, defender, hexagons, False))
+    print("defender: ", defender.unit.strength + defence_modifier(defender, attacker, hexagons, False))
+    print("Strength difference: " + str(strength_difference))
+    defender.unit.health = round(defender.unit.health-30*np.exp(strength_difference/25))
+    if defender.unit.health <= 0:
+        defender.unit = None
+
+
 
 
 def unselect_buttons(buttons: list[Button]):
@@ -603,35 +620,44 @@ while True:
                     button_list[i].selected = True
 
             # Check which hexagon was clicked (if any)
-            if not button_clicked:
-                new_selection = (click_square(x, y, (400, 300), hexagons))
+            if button_clicked:
+                continue
+            new_selection = (click_square(x, y, (400, 300), hexagons))
 
-                # Check if unit should be moved
-                if selected_hex is not None and new_selection is not None:
-                    if selected_hex == new_selection:
-                        continue
-                    if button_list[0].selected:
-                        # check if enough movement
-                        movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
-                        if (hexagons[selected_hex].unit.movement_left >= movement_required or
-                            hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max):
-                            # check if initiates combat
-                            if hexagons[new_selection].unit:
-                                if hexagons[selected_hex].unit.team != hexagons[new_selection].unit.team:
-                                    move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[previous_square])
-                                    combat_melee(hexagons[previous_square], hexagons[new_selection])
-                            else:
-                                hexagons[selected_hex].unit.movement_left -= movement_required
-                                if hexagons[selected_hex].unit.movement_left < 0:
-                                    hexagons[selected_hex].unit.movement_left = 0
-                                move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[new_selection])
+            # Check if unit should be moved
+            if selected_hex is not None and new_selection is not None:
+                if selected_hex == new_selection:
+                    continue
+
+                # ranged attack
+                if button_list[1].selected:
+                    if hexagons[selected_hex].unit.range > 0 and hexagons[selected_hex].unit.movement_left>0:
+                        if hexagons[new_selection] in get_unit_range(hexagons[selected_hex], hexagons):
+                            combat_ranged(hexagons[selected_hex], hexagons[new_selection])
+                            #ranged_attack(hexagons[selected_hex], hexagons[new_selection], hexagons)
+
+                if button_list[0].selected:
+                    # check if enough movement
+                    movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
+                    if (hexagons[selected_hex].unit.movement_left >= movement_required or
+                        hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max):
+                        # check if initiates combat
+                        if hexagons[new_selection].unit:
+                            if hexagons[selected_hex].unit.team != hexagons[new_selection].unit.team:
+                                move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[previous_square])
+                                combat_melee(hexagons[previous_square], hexagons[new_selection])
                         else:
-                            print("not enough movement")
+                            hexagons[selected_hex].unit.movement_left -= movement_required
+                            if hexagons[selected_hex].unit.movement_left < 0:
+                                hexagons[selected_hex].unit.movement_left = 0
+                            move_unit(hexagons[selected_hex].unit, hexagons[selected_hex], hexagons[new_selection])
+                    else:
+                        print("not enough movement")
 
-                # unselect action
-                if new_selection is None or new_selection != selected_hex:
-                    unselect_buttons(button_list)
-                selected_hex = new_selection
+            # unselect action
+            if new_selection is None or new_selection != selected_hex:
+                unselect_buttons(button_list)
+            selected_hex = new_selection
 
     screen.fill(GRAY_BROWN)
 
