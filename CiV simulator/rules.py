@@ -131,6 +131,7 @@ def move_unit(unit, sq_from, sq_to):
     :param sq_to: Square
     :return: None
     """
+    sq_from.unit.fortified = False
     sq_from.unit = None
     sq_to.unit = unit
 
@@ -256,7 +257,10 @@ def draw_hexagon(surface, sq: Square, center: (int, int)):
 
     surface.blit(terrains_dict[type], (sq.center[0]+center[0]-50, sq.center[1]+center[1]-50))
     if sq.unit:
-        surface.blit(sq.unit.image, (sq.center[0]+center[0]-30, sq.center[1]+center[1]-30))
+        if sq.unit.fortified:
+            surface.blit(sq.unit.image_fortified, (sq.center[0]+center[0]-30, sq.center[1]+center[1]-30))
+        else:
+            surface.blit(sq.unit.image, (sq.center[0]+center[0]-30, sq.center[1]+center[1]-30))
 
 
 def highlight_hexagon(surface, sq: Square, center: (int, int)):
@@ -456,6 +460,7 @@ def new_turn(board: list[Square]):
             continue
         if sq.unit.movement_left == sq.unit.movement_max:
             sq.unit.health = min(100, sq.unit.health+10)
+            sq.unit.fortified = True
         sq.unit.movement_left = sq.unit.movement_max
 
 
@@ -495,6 +500,9 @@ def defence_modifier(square_defender: Square, attacker_square: Square, all_squar
     modifier -= round(10 - square_defender.unit.health/10)
     #terrain
     modifier += terrain_combat_modifier[square_defender.terrain]
+    #fortifying
+    if square_defender.unit.fortified:
+        modifier += 6
     #support
         # let's assume all teams are always at war with each other
     if melee:
@@ -555,10 +563,11 @@ def combat_ranged(attacker: Square, defender: Square):
     print("attacker: ", attacker.unit.ranged_strength + offence_modifier(attacker, defender, hexagons, False))
     print("defender: ", defender.unit.strength + defence_modifier(defender, attacker, hexagons, False))
     print("Strength difference: " + str(strength_difference))
+    attacker.unit.fortified = False
+    attacker.unit.movement_left = 0
     defender.unit.health = round(defender.unit.health-30*np.exp(strength_difference/25))
     if defender.unit.health <= 0:
         defender.unit = None
-
 
 
 
@@ -602,6 +611,8 @@ pygame.display.set_caption('Hexagon Board')
 hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
 hexagons[10].unit = create_unit("swordsman", (hexagons[10].x, hexagons[10].y), 1)
 hexagons[15].unit = create_unit("archer", (hexagons[15].x, hexagons[15].y), 2)
+hexagons[16].unit = create_unit("slinger", (hexagons[16].x, hexagons[16].y), 2)
+hexagons[17].unit = create_unit("warrior", (hexagons[17].x, hexagons[17].y), 2)
 
 selected_hex = None
 
@@ -622,6 +633,8 @@ while True:
                     unselect_buttons(button_list)
                     button_clicked = True
                     button_list[i].selected = True
+            if button_list[3].selected:
+                new_turn(hexagons)
 
             # Check which hexagon was clicked (if any)
             if button_clicked:
@@ -638,7 +651,6 @@ while True:
                     if hexagons[selected_hex].unit.range > 0 and hexagons[selected_hex].unit.movement_left>0:
                         if hexagons[new_selection] in get_unit_range(hexagons[selected_hex], hexagons):
                             combat_ranged(hexagons[selected_hex], hexagons[new_selection])
-                            #ranged_attack(hexagons[selected_hex], hexagons[new_selection], hexagons)
 
                 if button_list[0].selected:
                     # check if enough movement
@@ -683,10 +695,5 @@ while True:
         if button_list[1].selected:
             display_range(hexagons[selected_hex], hexagons, screen)
 
-    # If end turn is chosen
-    if button_list[3].selected:
-        new_turn(hexagons)
 
     pygame.display.flip()
-
-
