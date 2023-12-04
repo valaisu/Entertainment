@@ -37,6 +37,7 @@ CENTER = (SCREEN_WIDTH/2, DISPLAY_HEIGHT/2)
 # Colors
 WHITE = (255, 255, 255)
 GREEN = (50, 220, 50)
+GREEN_D = (50, 140, 50)
 BLUE_D = (100, 100, 200)
 RED = (150, 50, 50)
 BLACK = (0, 0, 0)
@@ -60,6 +61,8 @@ hills = pygame.transform.scale(pygame.image.load("hills.png"), (100, 100))
 forest = pygame.transform.scale(pygame.image.load("forest.png"), (100, 100))
 hills_and_forest = pygame.transform.scale(pygame.image.load("hills_and_forest.png"), (100, 100))
 marsh = pygame.transform.scale(pygame.image.load("marsh.png"), (100, 100))
+ocean = pygame.transform.scale(pygame.image.load("ocean.png"), (100, 100))
+mountain = pygame.transform.scale(pygame.image.load("mountain.png"), (100, 100))
 
 # Action bar buttons
 move = pygame.transform.scale(pygame.image.load("move.png"), (60, 60))
@@ -77,9 +80,8 @@ button_list = [Button(460, 620, move, move_s, 30, 30),
                Button(600, 620, fortify, fortify_s, 30, 30),
                Button(690, 600, end_turn, end_turn_s, 40, 40)]
 
-
-terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh}
-movement_costs = {0: 1, 1: 2, 2: 2, 3: 3, 4: 2}
+terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh, 5: ocean, 6: mountain}
+movement_costs = {0: 1, 1: 2, 2: 2, 3: 3, 4: 2, 5: -1, 6: -1} #fix -1 later
 terrain_combat_modifier = {0: 0, 1: 3, 2: 3, 3: 6, 4: -3}
 
 
@@ -206,7 +208,7 @@ def create_board(amount: int, size: float):
                 tot += 1
                 x = (i+1)*directions[dir][0] + j*directions[(dir-2)%6][0]
                 y = (i+1)*directions[dir][1] + j*directions[(dir-2)%6][1]
-                ter = random.choices([0, 1, 2, 3, 4], weights=[6, 2, 2, 2, 1])[0]
+                ter = random.choices([0, 1, 2, 3, 4, 5, 6], weights=[6, 2, 2, 2, 1, 0.5, 1])[0]
                 hexes.append(Square(x, y, size, ter, CENTER, tot))
     return hexes
 
@@ -252,8 +254,11 @@ def draw_hexagon(surface, sq: Square, center: (int, int)):
         x_i = x + size * math.cos(angle * i) + sq.center[0] + center[0]
         y_i = y + size * math.sin(angle * i) + sq.center[1] + center[1]
         points.append((x_i, y_i))
-    pygame.draw.polygon(surface, GREEN, points)
-    pygame.draw.polygon(surface, WHITE, points, 2)
+    if sq.terrain == 5:
+        pygame.draw.polygon(surface, BLUE_D, points)
+    else:
+        pygame.draw.polygon(surface, GREEN, points)
+        pygame.draw.polygon(surface, GREEN_D, points, 1)
 
     surface.blit(terrains_dict[type], (sq.center[0]+center[0]-50, sq.center[1]+center[1]-50))
     if sq.unit:
@@ -329,6 +334,8 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
     while True:
         neighbors = get_neighbors(squares[square_indices[ind]], squares)
         for n in neighbors:
+            if n.movement_cost == -1:
+                continue
             movement = n.movement_cost + movement_list[ind]
             if n.index in square_indices:
                 if movement < movement_list[square_indices.index(n.index)]:
@@ -347,7 +354,7 @@ def pathfinding(start: Square, end: Square, squares: list[Square]):
                 movement_list.insert(i, movement)
         ind += 1
         if len(movement_list) == ind:
-            return -1
+            return -1, -1
 
 
 def display_areas(squares: list[Square], screen, color):
@@ -379,10 +386,10 @@ def can_shoot_2(start: Square, target: Square, squares: list[Square]):
 
     if start.terrain in [1, 3]:
         for sq in intersect:
-            if sq.terrain not in [3]:
+            if sq.terrain not in [3, 6]:
                 return True
     for sq in intersect:
-        if sq.terrain not in [1, 2, 3]:
+        if sq.terrain not in [1, 2, 3, 6]:
             return True
     return False
 
@@ -421,6 +428,8 @@ def get_movement_squares(start: Square, squares: list[Square]):
             break
         neighbors = get_neighbors(squares[square_indices[ind]], squares)
         for n in neighbors:
+            if n.movement_cost == -1:
+                continue
             if n.unit and n.unit.team != start.unit.team:
                 continue
             movement = n.movement_cost + movement_list[ind]
@@ -608,11 +617,54 @@ pygame.display.set_caption('Hexagon Board')
 
 
 # MANUALLY ADD UNITS HERE
-hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
+# TEAM RED BASE: 31, TEAM BLUE BASE: 22
+
+team1 = ["archer", "warrior", "warrior"]
+team2 = ["swordsman", "swordsman"]
+
+
+def set_units_on_board(hexagons: list[Square], team1: list[str], team2: list[str]):
+    """
+    Generates two armies around squares 31 and 22
+    :param hexagons: list[square]
+    :param team1: list[str]
+    :param team2: list[str]
+    :return: None
+    """
+    print(hexagons[36], len(hexagons))
+    valid_squares_1 = []
+    if hexagons[31].terrain not in [5, 6]:
+        valid_squares_1.append(31)
+        hexagons[31].unit = create_unit(team1[0], (hexagons[31].x, hexagons[31].y), 1)
+    queue1 = get_neighbors(hexagons[31], hexagons, 2)
+    counter = 0
+    while len(valid_squares_1) < len(team1):
+        ind = queue1[counter].index
+        if hexagons[ind].terrain not in [5, 6]:
+            valid_squares_1.append(ind)
+            hexagons[ind].unit = create_unit(team1[len(valid_squares_1)-1], (hexagons[ind].x, hexagons[ind].y), 1)
+        counter += 1
+
+    valid_squares_2 = []
+    if hexagons[22].terrain not in [5, 6]:
+        valid_squares_2.append(22)
+        hexagons[22].unit = create_unit(team2[0], (hexagons[22].x, hexagons[22].y), 2)
+    queue2 = get_neighbors(hexagons[22], hexagons, 2)
+    counter = 0
+    while len(valid_squares_2) < len(team2):
+        ind = queue2[counter].index
+        if hexagons[ind].terrain not in [5, 6]:
+            valid_squares_2.append(ind)
+            hexagons[ind].unit = create_unit(team2[len(valid_squares_2)-1], (hexagons[ind].x, hexagons[ind].y), 2)
+        counter += 1
+
+
+set_units_on_board(hexagons, team1, team2)
+'''hexagons[9].unit = create_unit("chariot", (hexagons[9].x, hexagons[9].y), 1)
 hexagons[10].unit = create_unit("swordsman", (hexagons[10].x, hexagons[10].y), 1)
 hexagons[15].unit = create_unit("archer", (hexagons[15].x, hexagons[15].y), 2)
 hexagons[16].unit = create_unit("slinger", (hexagons[16].x, hexagons[16].y), 2)
-hexagons[17].unit = create_unit("warrior", (hexagons[17].x, hexagons[17].y), 2)
+hexagons[17].unit = create_unit("warrior", (hexagons[17].x, hexagons[17].y), 2)'''
 
 selected_hex = None
 
@@ -643,18 +695,25 @@ while True:
 
             # Check if unit should be moved
             if selected_hex is not None and new_selection is not None:
+                print(new_selection)
                 if selected_hex == new_selection:
                     continue
 
                 # ranged attack
                 if button_list[1].selected:
-                    if hexagons[selected_hex].unit.range > 0 and hexagons[selected_hex].unit.movement_left>0:
-                        if hexagons[new_selection] in get_unit_range(hexagons[selected_hex], hexagons):
-                            combat_ranged(hexagons[selected_hex], hexagons[new_selection])
+                    if hexagons[selected_hex].unit.range <= 0 or hexagons[selected_hex].unit.movement_left <= 0:
+                        continue
+                    if hexagons[new_selection] not in get_unit_range(hexagons[selected_hex], hexagons):
+                        continue
+                    if hexagons[new_selection].unit.team == hexagons[selected_hex].unit.team:
+                        continue
+                    combat_ranged(hexagons[selected_hex], hexagons[new_selection])
 
                 if button_list[0].selected:
                     # check if enough movement
                     movement_required, previous_square = pathfinding(hexagons[selected_hex], hexagons[new_selection], hexagons)
+                    if movement_required == -1:
+                        continue
                     if (hexagons[selected_hex].unit.movement_left >= movement_required or
                         (hexagons[selected_hex].unit.movement_left == hexagons[selected_hex].unit.movement_max and
                          movement_required == hexagons[new_selection].movement_cost)):
@@ -697,3 +756,5 @@ while True:
 
 
     pygame.display.flip()
+
+
