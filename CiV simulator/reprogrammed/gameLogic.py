@@ -4,6 +4,12 @@ The part of the program that represents the game
 non-visually
 
 """
+
+'''
+ideas to improve efficiency 
+    keep register of unit locations
+'''
+
 import numpy as np
 import random
 
@@ -98,6 +104,27 @@ def get_neighbors(square: Square, squares: list[Square], range=1):
                 square_by_coordinates(squares, x, y)]
 
 
+def get_neighbors_index(square: Square, squares: list[Square], range=1):
+    """
+    Gets the neighbors of a square
+    :param square:
+    :param squares:
+    :param range:
+    :return:
+    """
+    if range == 1:
+        neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions]
+        return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
+    elif range == 2:
+        neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions2]
+        return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
+                square_by_coordinates(squares, x, y)]
+
+
+
+
+
 
 def create_board(amount: int):
     """
@@ -121,7 +148,7 @@ def create_board(amount: int):
 class Game:
     def __init__(self, no_players: int, board_size: int):
         self.squares: list[Square] = create_board(board_size)
-        self.teams = []
+        #self.teams = []
         self.turns = Turns(no_players)
         # precalculate neighbors for each square, as they will be needed often
         self.index_to_neighbors = {}
@@ -130,9 +157,18 @@ class Game:
         self.coordinates_to_square = {}
         for square in self.squares:
             self.index_to_neighbors[square.index] = get_neighbors(square, self.squares)
-            self.coordinates_to_neighbor[(square.x, square.y)] = get_neighbors(square, self.squares)
             self.index_to_square[square.index] = square
+            #self.index_to_neighbors[square.index] = [self.squares[sq] for sq in get_neighbors_index(square, self.squares)]
+            # THE GET NEIGHBORS IS A FUNCTION OUTSIDE OF THE CLASS
+            # AND THEREFOR CREATES A NON-SHALLOW COPY OF THE NEIGHBORS
+            self.coordinates_to_neighbor[(square.x, square.y)] = [self.squares[sq] for sq in get_neighbors_index(square, self.squares)]
             self.coordinates_to_square[(square.x, square.y)] = square
+        '''        
+        for i in range(len(self.squares)):
+            self.index_to_neighbors[self.squares[i].index] = get_neighbors(self.squares[i], self.squares)
+            self.coordinates_to_neighbor[(self.squares[i].x, self.squares[i].y)] = get_neighbors(self.squares[i], self.squares)
+            self.index_to_square[self.squares[i].index] = self.squares[i]
+            self.coordinates_to_square[(self.squares[i].x, self.squares[i].y)] = self.squares[i]'''
 
     def set_units_on_board(self, team1: list[str], team2: list[str], sq1: int = 31, sq2: int = 22):
         """
@@ -147,7 +183,7 @@ class Game:
         valid_squares_1 = []
         if self.squares[sq1].terrain not in [5, 6]:
             valid_squares_1.append(sq1)
-            self.squares[sq1].unit = create_unit(team1[0], (self.squares[sq1].x, self.squares[sq1].y), 1)
+            self.squares[sq1].unit = create_unit(team1[0], (self.squares[sq1].x, self.squares[sq1].y), 0)
             team1_units.append(self.squares[sq1].unit)
         queue1 = get_neighbors(self.squares[sq1], self.squares, 2)
         counter = 0
@@ -155,7 +191,7 @@ class Game:
             ind = queue1[counter].index
             if self.squares[ind].terrain not in [5, 6]:
                 valid_squares_1.append(ind)
-                self.squares[ind].unit = create_unit(team1[len(valid_squares_1) - 1], (self.squares[ind].x, self.squares[ind].y), 1)
+                self.squares[ind].unit = create_unit(team1[len(valid_squares_1) - 1], (self.squares[ind].x, self.squares[ind].y), 0)
                 team1_units.append(self.squares[ind].unit)
             counter += 1
 
@@ -163,7 +199,7 @@ class Game:
         valid_squares_2 = []
         if self.squares[sq2].terrain not in [5, 6]:
             valid_squares_2.append(sq2)
-            self.squares[sq2].unit = create_unit(team2[0], (self.squares[sq2].x, self.squares[sq2].y), 2)
+            self.squares[sq2].unit = create_unit(team2[0], (self.squares[sq2].x, self.squares[sq2].y), 1)
             team2_units.append(self.squares[sq2].unit)
         queue2 = get_neighbors(self.squares[sq2], self.squares, 2)
         counter = 0
@@ -171,12 +207,24 @@ class Game:
             ind = queue2[counter].index
             if self.squares[ind].terrain not in [5, 6]:
                 valid_squares_2.append(ind)
-                self.squares[ind].unit = create_unit(team2[len(valid_squares_2) - 1], (self.squares[ind].x, self.squares[ind].y), 2)
+                self.squares[ind].unit = create_unit(team2[len(valid_squares_2) - 1], (self.squares[ind].x, self.squares[ind].y), 1)
                 team2_units.append(self.squares[ind].unit)
             counter += 1
 
-        self.teams = [team1_units, team2_units]
-        print(self.teams)
+        #self.teams = [team1_units, team2_units]
+        #print(self.teams)
+
+    #def update_unit_loc(self, unit: Unit):
+
+
+    def get_team(self, team: int):
+        team_units = []
+        for square in self.squares:
+            if square.unit:
+                print(square.unit.team, team)
+            if square.unit and square.unit.team == team:
+                team_units.append(square.unit)
+        return team_units
 
     # Update the board
     def defence_modifier(self, defender: Square, melee=True):
@@ -241,6 +289,7 @@ class Game:
         if defender.unit.health <= 0:
             defender.unit = attacker.unit
             defender.unit.movement_left = 0
+            defender.unit.location = defender.loc
             attacker.unit = None
 
     def move_unit(self, start_coords: (int, int), end_coords: (int, int), movement_cost: int):
@@ -255,16 +304,20 @@ class Game:
         square_start.unit.fortified = False
         square_start.unit.movement_left -= movement_cost
         square_end.unit = square_start.unit
+        square_end.unit.location = square_end.loc
         square_start.unit = None
 
     def update_state(self, start_coordinates: (int, int), end_coordinates: (int, int),
                      previous_square_coordinates: (int, int), movement_cost: int, move: bool):
         start = self.coordinates_to_square[start_coordinates]
+        prev = self.coordinates_to_square[previous_square_coordinates]
         end = self.coordinates_to_square[end_coordinates]
+        print("indices: ", start.index, prev.index, end.index)
         if move:
             if end.unit:
-                self.move_unit(start_coordinates, previous_square_coordinates, movement_cost)
-                self.melee_combat(start, end)
+                if start!=prev:
+                    self.move_unit(start_coordinates, previous_square_coordinates, movement_cost)
+                self.melee_combat(prev, end)
             else:
                 self.move_unit(start_coordinates, end_coordinates, movement_cost)
         else:
@@ -274,7 +327,6 @@ class Game:
         """
         Heals units and refreshes their movement
         Fortifies unit if still has full movement
-        :param board:
         :return:
         """
         for sq in self.squares:
@@ -323,10 +375,8 @@ class Game:
         indices of previous squares, relevant with combats
         movement costs
         :param start:
-        :param squares:
         :return: list[int], list[int], list[int]
         """
-        # TODO: the previous square
 
         max_movement = start.unit.movement_left
 
@@ -379,9 +429,11 @@ class Game:
 
     def get_action_space(self):
         actions = []
-        for i, unit in enumerate(self.teams[self.turns.to_play]):
+        for i, unit in enumerate(self.get_team(self.turns.to_play)):
+            print("here", unit.location)
             # melee / movement
-            endpoints, previous, cost = self.get_movement(self.coordinates_to_square[unit.location])
+            loc = self.coordinates_to_square[unit.location]
+            endpoints, previous, cost = self.get_movement(loc)
             for j in range(len(endpoints)):
                 start = unit.location
                 end = self.squares[endpoints[j]].loc
@@ -403,14 +455,12 @@ class Game:
         pass
 
 
-
-
-
 game = Game(2, 3)
 team1 = ["archer", "warrior", "warrior"]
 team2 = ["swordsman", "swordsman"]
 game.set_units_on_board(team1, team2)
 
+print("kkk", game.get_movement(game.squares[31]))
 
 """
 note to self
