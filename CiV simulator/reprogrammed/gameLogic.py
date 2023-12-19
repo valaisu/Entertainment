@@ -321,7 +321,7 @@ class Game:
             else:
                 self.move_unit(start_coordinates, end_coordinates, movement_cost)
         else:
-            self.ranged_combat(end, start)
+            self.ranged_combat(start, end)
 
     def end_turn(self):
         """
@@ -413,6 +413,11 @@ class Game:
 
     def get_ranged_attacks(self, square: Square):
         enemies = []
+        # Range 1
+        for neigh in self.coordinates_to_neighbor[square.loc]:
+            if neigh.unit and neigh.unit.team != square.unit.team:
+                enemies.append(neigh.loc)
+        # Range 2
         elevation = 1 if square.terrain in [2, 3] else 0
         for key, value in obstacles.items():
             # key = target, value = obstacles
@@ -430,7 +435,6 @@ class Game:
     def get_action_space(self):
         actions = []
         for i, unit in enumerate(self.get_team(self.turns.to_play)):
-            print("here", unit.location)
             # melee / movement
             loc = self.coordinates_to_square[unit.location]
             endpoints, previous, cost = self.get_movement(loc)
@@ -441,7 +445,7 @@ class Game:
                 costs = cost[j]
                 actions.append([start, end, prev, costs, True])
             # ranged
-            if unit.ranged_strength != 0:
+            if unit.ranged_strength != 0 and unit.movement_left > 0:
                 targets = self.get_ranged_attacks(self.coordinates_to_square[unit.location])
                 for target in targets:
                     actions.append([unit.location, target, unit.location, unit.movement_left, False])
@@ -455,12 +459,12 @@ class Game:
         pass
 
 
+
 game = Game(2, 3)
 team1 = ["archer", "warrior", "warrior"]
 team2 = ["swordsman", "swordsman"]
 game.set_units_on_board(team1, team2)
 
-print("kkk", game.get_movement(game.squares[31]))
 
 """
 note to self
