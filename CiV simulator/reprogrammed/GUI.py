@@ -196,8 +196,6 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Hexagon Board')
 
 actions = game.get_action_space()
-for a in actions:
-    print(a)
 
 
 previous_selection = None
@@ -223,42 +221,42 @@ while True:
             if not button_clicked:
                 previous_selection = current_selection
                 current_selection = get_square_clicked(x, y, game.squares)
-                print(previous_selection, current_selection)
                 # Check if action should be performed in game
                 # move
                 if button_list[0].selected:
                     if current_selection is not None and previous_selection is not None:
-                        print("coming")
-                        print("prev, cur", previous_selection, current_selection)
                         prev, cur = game.squares[previous_selection].loc, game.squares[current_selection].loc
                         for action in actions:
-                            print(action)
                             if action[4]:
                                 if action[0] == prev and action[1] == cur:
                                     game.perform_action(*action)
+                                    current_selection, previous_selection = None, None
                                     actions = game.get_action_space()
                 # ranged attack
                 if button_list[1].selected:
                     if current_selection is not None and previous_selection is not None:
+                        prev, cur = game.squares[previous_selection].loc, game.squares[current_selection].loc
                         for action in actions:
                             if not action[4]:
-                                if action[0] == previous_selection and action[1] == current_selection:
+                                if action[0] == prev and action[1] == cur:
                                     game.perform_action(*action)
+                                    current_selection, previous_selection = None, None
                                     actions = game.get_action_space()
                 # end turn
                 if button_list[3].selected:
                     game.perform_action(0)
+                    unselect_buttons()
                     actions = game.get_action_space()
 
         draw_board(game, screen)
         draw_action_bar(screen)
 
         if current_selection is not None:
-            highlight_square(screen, game.squares[current_selection])
             # and display stats
             if game.squares[current_selection].unit:
                 display_stats(screen, game.squares[current_selection].unit)
                 display_actions(screen, actions, game.squares[current_selection].unit)
+            highlight_square(screen, game.squares[current_selection])
 
 
 
