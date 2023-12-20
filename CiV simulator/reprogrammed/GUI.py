@@ -35,6 +35,9 @@ GRAY_BROWN = (172,157,129)
 DARKER_BROWN = (142,137,119)
 YELLOW = (200,200,50)
 
+turn_colors = [(200, 50, 200), (100, 100, 200), (200, 50, 50)]
+
+
 # Terrain
 empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
 hills = pygame.transform.scale(pygame.image.load("hills.png"), (100, 100))
@@ -185,10 +188,14 @@ def display_stats(surface, unit: Unit):
     draw_text(str(unit.strength), 18, 200, 670)
 
 
+def display_turn(surface):
+    col = turn_colors[game.turns.to_play]
+    pygame.draw.circle(surface, col, (50, 50), 10)
+
+
 def display_actions(surface, action_space: list, unit: Unit):
     for act in action_space:
         if act[0] == unit.location:
-
             highlight_square(surface, game.coordinates_to_square[act[1]], color=BLUE_D)
 
 
@@ -196,7 +203,6 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Hexagon Board')
 
 actions = game.get_action_space()
-
 
 previous_selection = None
 current_selection = None
@@ -208,6 +214,16 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_m:
+                unselect_buttons()
+                button_list[0].selected = True
+            if event.key == pygame.K_r:
+                unselect_buttons()
+                button_list[1].selected = True
+            if event.key == pygame.K_RETURN:
+                unselect_buttons()
+                button_list[3].selected = True
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = event.pos
             # Check is button clicked
@@ -232,6 +248,7 @@ while True:
                                     game.perform_action(*action)
                                     current_selection, previous_selection = None, None
                                     actions = game.get_action_space()
+
                 # ranged attack
                 if button_list[1].selected:
                     if current_selection is not None and previous_selection is not None:
@@ -242,14 +259,17 @@ while True:
                                     game.perform_action(*action)
                                     current_selection, previous_selection = None, None
                                     actions = game.get_action_space()
-                # end turn
-                if button_list[3].selected:
-                    game.perform_action(0)
-                    unselect_buttons()
-                    actions = game.get_action_space()
+
+        # end turn
+        if button_list[3].selected:
+            game.perform_action(0)
+            unselect_buttons()
+            actions = game.get_action_space()
+            current_selection, previous_selection = None, None
 
         draw_board(game, screen)
         draw_action_bar(screen)
+        display_turn(screen)
 
         if current_selection is not None:
             # and display stats
@@ -258,10 +278,7 @@ while True:
                 display_actions(screen, actions, game.squares[current_selection].unit)
             highlight_square(screen, game.squares[current_selection])
 
-
-
         pygame.display.flip()
-
 
 
 # TODO: check out gymnasium
