@@ -5,26 +5,22 @@ non-visually
 
 """
 
-'''
-ideas to improve efficiency 
-    keep register of unit locations
-'''
 
 import numpy as np
 import random
+from units import create_unit
 
-from units import Unit, create_unit
 
 movement_costs = {0: 1, 1: 2, 2: 2, 3: 3, 4: 2, 5: -1, 6: -1}
 terrain_combat_modifier = {0: 0, 1: 3, 2: 3, 3: 6, 4: -3}
-#terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh, 5: ocean, 6: mountain}
+# terrains_dict = {0: empty, 1: hills, 2: forest, 3: hills_and_forest, 4: marsh, 5: ocean, 6: mountain}
 terrain_elevation = {0: 0, 1: 1, 2: 1, 3: 2, 4: 0, 5: 0, 6: 3}
 directions = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1)]
 directions2 = [(0, 1), (1, 0), (1, -1), (0, -1), (-1, 0), (-1, 1),
                (0, 2), (2, 0), (2, -2), (0, -2), (-2, 0), (-2, 2),
                (1, 1), (2, -1), (1, -2), (-1, -1), (-2, 1), (-1, 2)]
 
-# below tells which squares might block sight to which
+# below tells which squares might block sight to which squares
 obstacles = \
     {(0, 2): [(0, 1)], (2, 0): [(1, 0)], (2, -2): [(1, -1)], (0, -2): [(0, -1)], (-2, 0): [(-1, 0)], (-2, 2): [(-1, 1)],
      (1, 1): [(0, 1), (1, 0)], (2, -1): [(1, -1), (1, 0)], (1, -2): [(0, -1), (1, -1)], (-1, -1): [(-1, 0), (0, -1)]}
@@ -35,14 +31,6 @@ SCREEN_HEIGHT = 600+100
 TILE_SIZE = 50
 CENTER = (SCREEN_WIDTH/2, DISPLAY_HEIGHT/2)
 
-
-'''class Teams:
-    def __init__(self, teams: list[list[Unit]]):
-        self.teams = teams
-
-    def get_team(self, index: int):
-        return self.teams[index]
-'''
 
 class Turns:
     def __init__(self, no_players: int):
@@ -72,8 +60,6 @@ class Square:
                        CENTER[1] + np.cos(np.pi/6)*(self.y + self.x*np.cos(np.pi/3))*2*TILE_SIZE)
 
 
-
-# helper functions
 def square_by_coordinates(squares: list[Square], x: int, y: int):
     """
     Returns the square with coordinates x,y
@@ -86,44 +72,41 @@ def square_by_coordinates(squares: list[Square], x: int, y: int):
         if square.x == x and square.y == y:
             return square
 
-def get_neighbors(square: Square, squares: list[Square], range=1):
+
+def get_neighbors(square: Square, squares: list[Square], range_n: int = 1):
     """
     Gets the neighbors of a square
-    :param square:
-    :param squares:
-    :param range:
+    :param square: list[Square]
+    :param squares: list[Square]
+    :param range_n: int
     :return:
     """
-    if range == 1:
+    if range_n == 1:
         neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions]
         return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if
                 square_by_coordinates(squares, x, y)]
-    elif range == 2:
+    elif range_n == 2:
         neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions2]
         return [square_by_coordinates(squares, x, y) for x, y in neighbor_coordinates if
                 square_by_coordinates(squares, x, y)]
 
 
-def get_neighbors_index(square: Square, squares: list[Square], range=1):
+def get_neighbors_index(square: Square, squares: list[Square], range_n: int = 1):
     """
     Gets the neighbors of a square
-    :param square:
-    :param squares:
-    :param range:
-    :return:
+    :param square: Square
+    :param squares: list[Square]
+    :param range_n: int
+    :return: int
     """
-    if range == 1:
+    if range_n == 1:
         neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions]
         return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
                 square_by_coordinates(squares, x, y)]
-    elif range == 2:
+    elif range_n == 2:
         neighbor_coordinates = [(square.x + d[0], square.y + d[1]) for d in directions2]
         return [square_by_coordinates(squares, x, y).index for x, y in neighbor_coordinates if
                 square_by_coordinates(squares, x, y)]
-
-
-
-
 
 
 def create_board(amount: int):
@@ -133,7 +116,7 @@ def create_board(amount: int):
     :return: list[square]
     """
     first_terrain = random.choices([0, 1, 2, 3, 4, 5, 6], weights=[6, 2, 2, 2, 1, 0.5, 1])[0]
-    hexes = [Square(0,0,first_terrain, 0)]
+    hexes = [Square(0, 0, first_terrain, 0)]
     tot = 0
     for i in range(amount):
         for dir in range(len(directions)):
@@ -145,10 +128,10 @@ def create_board(amount: int):
                 hexes.append(Square(x, y, ter, tot))
     return hexes
 
+
 class Game:
     def __init__(self, no_players: int, board_size: int):
         self.squares: list[Square] = create_board(board_size)
-        #self.teams = []
         self.turns = Turns(no_players)
         # precalculate neighbors for each square, as they will be needed often
         self.index_to_neighbors = {}
@@ -158,17 +141,8 @@ class Game:
         for square in self.squares:
             self.index_to_neighbors[square.index] = get_neighbors(square, self.squares)
             self.index_to_square[square.index] = square
-            #self.index_to_neighbors[square.index] = [self.squares[sq] for sq in get_neighbors_index(square, self.squares)]
-            # THE GET NEIGHBORS IS A FUNCTION OUTSIDE OF THE CLASS
-            # AND THEREFOR CREATES A NON-SHALLOW COPY OF THE NEIGHBORS
             self.coordinates_to_neighbor[(square.x, square.y)] = [self.squares[sq] for sq in get_neighbors_index(square, self.squares)]
             self.coordinates_to_square[(square.x, square.y)] = square
-        '''        
-        for i in range(len(self.squares)):
-            self.index_to_neighbors[self.squares[i].index] = get_neighbors(self.squares[i], self.squares)
-            self.coordinates_to_neighbor[(self.squares[i].x, self.squares[i].y)] = get_neighbors(self.squares[i], self.squares)
-            self.index_to_square[self.squares[i].index] = self.squares[i]
-            self.coordinates_to_square[(self.squares[i].x, self.squares[i].y)] = self.squares[i]'''
 
     def set_units_on_board(self, team1: list[str], team2: list[str], sq1: int = 31, sq2: int = 22):
         """
@@ -211,23 +185,28 @@ class Game:
                 team2_units.append(self.squares[ind].unit)
             counter += 1
 
-        #self.teams = [team1_units, team2_units]
-        #print(self.teams)
-
-    #def update_unit_loc(self, unit: Unit):
-
-
     def get_team(self, team: int):
+        """
+        Gets all the units of a team
+        :param team:
+        :return: list[Unit]
+        """
         team_units = []
         for square in self.squares:
-            if square.unit:
-                print(square.unit.team, team)
             if square.unit and square.unit.team == team:
                 team_units.append(square.unit)
         return team_units
 
     # Update the board
     def defence_modifier(self, defender: Square, melee=True):
+        """
+        Calculates the defence modifier
+            Defending unit gets strength modifier from the terrain, adjacent
+            friendly units and being fortified
+        :param defender: Square
+        :param melee: Bool
+        :return: int
+        """
         modifier = 0
         # unit health
         modifier -= round(10 - defender.unit.health / 10)
@@ -245,6 +224,14 @@ class Game:
         return modifier
 
     def offence_modifier(self, attacker: Square, defender: Square, melee=True):
+        """
+        Calculates the offence modifier
+                Melee unit gets bonus strength for other units flanking the target
+        :param attacker: Square
+        :param defender: Square
+        :param melee: Bool
+        :return: int
+        """
         modifier = 0
         # unit health
         modifier -= round(10 - attacker.unit.health / 10)
@@ -259,6 +246,12 @@ class Game:
         return modifier
 
     def ranged_combat(self, attacker: Square, defender: Square):
+        """
+        Ranged combat
+        :param attacker: Square
+        :param defender: Square
+        :return: None
+        """
         strength_difference = ((attacker.unit.ranged_strength + self.offence_modifier(attacker, defender, False)) -
                                (defender.unit.strength + self.defence_modifier(defender, False)))
         attacker.unit.fortified = False
@@ -268,6 +261,7 @@ class Game:
             defender.unit = None
 
     def melee_combat(self, attacker: Square, defender: Square):
+        attacker.unit.fortified = False
         attacker.unit.movement_left = 0
         strength_difference = ((attacker.unit.strength + self.offence_modifier(attacker, defender)) -
                                (defender.unit.strength + self.defence_modifier(defender)))
@@ -297,7 +291,7 @@ class Game:
         Moves a unit from one square to another
         :param start_coords:
         :param end_coords:
-        :return:
+        :return: None
         """
         square_start = self.coordinates_to_square[start_coords]
         square_end = self.coordinates_to_square[end_coords]
@@ -309,10 +303,20 @@ class Game:
 
     def update_state(self, start_coordinates: (int, int), end_coordinates: (int, int),
                      previous_square_coordinates: (int, int), movement_cost: int, move: bool):
+        """
+        Updates the game state based on moving of single unit
+        :param start_coordinates: (int, int)
+        :param end_coordinates: (int, int)
+        :param previous_square_coordinates: (int, int)
+            unit moves here before attacking. The offence modifier is based
+            on this square
+        :param movement_cost: int
+        :param move: Bool
+        :return: None
+        """
         start = self.coordinates_to_square[start_coordinates]
         prev = self.coordinates_to_square[previous_square_coordinates]
         end = self.coordinates_to_square[end_coordinates]
-        print("indices: ", start.index, prev.index, end.index)
         if move:
             if end.unit:
                 if start!=prev:
@@ -327,7 +331,7 @@ class Game:
         """
         Heals units and refreshes their movement
         Fortifies unit if still has full movement
-        :return:
+        :return: None
         """
         for sq in self.squares:
             if not sq.unit:
@@ -341,6 +345,13 @@ class Game:
         self.turns.next_player()
 
     def perform_action(self, *args):
+        """
+        Performs an action
+        :param args:
+            either list of parameters required to update state, or 0, in
+            which case the turn is ended
+        :return: None
+        """
         if len(args) == 5:
             self.update_state(*args)
         elif len(args) == 1:
@@ -348,10 +359,10 @@ class Game:
 
     def binary_search(self, sorted_list: list[float], x: float):
         """
-        returns the index of first element grater than x
+        Returns the index of first element greater than x
         if there are none, returns the length of the list
-        :param sorted_list:
-        :param x:
+        :param sorted_list: list[float]
+        :param x: float
         :return: int
         """
         left, right = 0, len(sorted_list) - 1
@@ -373,7 +384,7 @@ class Game:
         Returns
         indices of the squares where unit can move to
         indices of previous squares, relevant with combats
-        movement costs
+        movement costs to each square
         :param start:
         :return: list[int], list[int], list[int]
         """
@@ -412,6 +423,11 @@ class Game:
         return square_indices, previous_square_indices, movement_list
 
     def get_ranged_attacks(self, square: Square):
+        """
+        Returns which squares can be attacked
+        :param square: Square
+        :return:
+        """
         enemies = []
         # Range 1
         for neigh in self.coordinates_to_neighbor[square.loc]:
@@ -433,6 +449,11 @@ class Game:
         return enemies
 
     def get_action_space(self):
+        """
+        Returns list of actions
+        :return: list[Square, Square, Square, int, Bool]
+            list[start, end, prev, cost, is_melee]
+        """
         actions = []
         for i, unit in enumerate(self.get_team(self.turns.to_play)):
             # melee / movement
@@ -453,24 +474,46 @@ class Game:
         return actions
 
     def get_game_state(self):
+        """
+        Encodes the game state so that each game state can be uniquely decoded
+        This encoding probably should retain some information about the game
+        such as the board shape, 'values' of the units, etc
+        :return: ???
+        """
         pass
 
-    def get_reward(self):
-        pass
+    def get_reward(self, team, turn_coef=5, health_coef=1, alive_coef=10):
+        """
+        Returns reward, currently quite arbitrary
+        with baseline coefficients the reward at start for 2 swordsmen is
+        35 * 100 * 1 + 35 * 10 - 1
+        for own units
+          + unit.health * unit.strength * a
+          + unit.strength * b
+        for enemy units
+          - same
+        - turn * c
+        :param team:
+        :param turn_coef: int
+        :param health_coef: int
+        :param alive_coef: int
+        :return:
+        """
+
+        reward = -self.turns.turn * turn_coef
+        for square in self.squares:
+            if not square.unit:
+                continue
+            if square.unit.team == team:
+                reward += square.unit.strength * (alive_coef + health_coef * square.unit.health)
+            else:
+                reward -= square.unit.strength * (alive_coef + health_coef * square.unit.health)
+        return reward
 
 
-
+# THE TEAMS ARE BUILD HERE
 game = Game(2, 3)
 team1 = ["archer", "warrior", "warrior"]
 team2 = ["swordsman", "swordsman"]
 game.set_units_on_board(team1, team2)
 
-
-"""
-note to self
-the communication between logic and AI:
-possible actions is called
-    actions are stored in format (start, end, previous, movement_cost, move=Bool)
-    actually all of the should probably be passed to AI
-
-"""
