@@ -1,5 +1,4 @@
-from gameLogic import Game, Turns, Square#, Teams
-from gameLogic import movement_costs, terrain_combat_modifier, game
+from gameLogic import Game, game, Square
 from units import Unit
 import pygame
 import sys
@@ -8,6 +7,7 @@ import numpy as np
 
 
 pygame.init()
+
 
 class Button:
     #__slots__ = ("image", "image_selected", "select_radius", "x", "y")
@@ -18,6 +18,7 @@ class Button:
         self.image_selected = image_selected
         self.selected = False
         self.select_radius = select_radius
+
 
 SCREEN_WIDTH = 800
 DISPLAY_HEIGHT = 600
@@ -37,7 +38,6 @@ YELLOW = (200,200,50)
 
 turn_colors = [(200, 50, 200), (100, 100, 200), (200, 50, 50)]
 
-
 # Terrain
 empty = pygame.transform.scale(pygame.image.load("empty.png"), (100, 100))
 hills = pygame.transform.scale(pygame.image.load("hills.png"), (100, 100))
@@ -55,6 +55,7 @@ target = pygame.transform.scale(pygame.image.load("target.png"), (60, 60))
 fortify = pygame.transform.scale(pygame.image.load("fortify.png"), (60, 60))
 end_turn = pygame.transform.scale(pygame.image.load("end_turn.png"), (80, 80))
 
+# Same buttons when selected
 move_s = pygame.transform.scale(pygame.image.load("move_selected.png"), (60, 60))
 target_s = pygame.transform.scale(pygame.image.load("target_selected.png"), (60, 60))
 fortify_s = pygame.transform.scale(pygame.image.load("fortify_selected.png"), (60, 60))
@@ -111,16 +112,16 @@ def draw_action_bar(surface):
         else:
             surface.blit(button.image, (button.x-30, button.y-30))
 
+
 # CLICK DETECTION
 
 def get_square_clicked(x: float, y: float, squares: list[Square]):
     """
     returns the square clicked
-    :param x:
-    :param y:
-    :param center:
-    :param list[Square]:
-    :return int: square index
+    :param x: float
+    :param y: float
+    :param squares: list[Square]
+    :return int||None: square index
     """
     distances = [(
         np.sqrt(math.pow(squares[i].center[0]-x, 2) +
@@ -147,12 +148,12 @@ def check_for_button_clicked(button: Button, click_location):
         return False
 
 
-def highlight_square(surface, sq: Square, color=YELLOW):
+def highlight_square(surface, sq: Square, color: tuple[int, int, int] = YELLOW):
     """
     Highlights a single hexagon
     :param surface:
     :param sq: Square
-    :param center: (int, int)
+    :param color: tuple[int, int, int]
     :return: None
     """
     x = sq.x
@@ -170,7 +171,14 @@ def unselect_buttons():
     for button in button_list:
         button.selected = False
 
+
 def display_stats(surface, unit: Unit):
+    """
+    Displays unit stats, including health, movement, strength
+    :param surface:
+    :param unit: Unit
+    :return: None
+    """
     pygame.draw.polygon(surface, DARKER_BROWN, [[0, 600], [250, 600], [250, 700], [0, 700]])
     surface.blit(unit.image, (20, 620))
 
@@ -189,8 +197,13 @@ def display_stats(surface, unit: Unit):
 
 
 def display_turn(surface):
+    """
+    Displays whose turn it is with a circle at left top corner
+    :param surface:
+    :return: None
+    """
     col = turn_colors[game.turns.to_play]
-    pygame.draw.circle(surface, col, (50, 50), 10)
+    pygame.draw.circle(surface, col, (50, 50), 20)
 
 
 def display_actions(surface, action_space: list, unit: Unit):
@@ -262,6 +275,8 @@ while True:
 
         # end turn
         if button_list[3].selected:
+            reward = game.get_reward(game.turns.to_play)
+            print(f"Reward of team {game.turns.to_play}: {reward}")
             game.perform_action(0)
             unselect_buttons()
             actions = game.get_action_space()
@@ -279,6 +294,3 @@ while True:
             highlight_square(screen, game.squares[current_selection])
 
         pygame.display.flip()
-
-
-# TODO: check out gymnasium
